@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Trash2, Hammer } from 'lucide-react';
+import { Trash2, Hammer, PanelRightClose, PanelRight } from 'lucide-react';
 import { CanvasItem, PlanStep, ChatMessage } from './types';
 import Canvas from './components/Canvas';
 import Sidebar from './components/Sidebar';
@@ -16,7 +16,8 @@ function App() {
   const [isThinking, setIsThinking] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: window.innerWidth / 4, y: window.innerHeight / 4 });
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showSidebar, setShowSidebar] = useState(true);
 
   const addWorkflow = () => {
     const newId = Math.random().toString(36).substr(2, 9);
@@ -33,7 +34,7 @@ function App() {
       layers: []
     };
     setItems(prev => [...prev, newItem]);
-    setSelectedId(newId);
+    setSelectedIds([newId]);
   };
 
   const addImageItem = (file: File) => {
@@ -55,7 +56,7 @@ function App() {
         layers: []
       };
       setItems(prev => [...prev, newItem]);
-      setSelectedId(newId);
+      setSelectedIds([newId]);
     };
     reader.readAsDataURL(file);
   };
@@ -76,7 +77,7 @@ function App() {
       layers: []
     };
     setItems(prev => [...prev, newItem]);
-    setSelectedId(newId);
+    setSelectedIds([newId]);
   };
 
   const addMessage = (text: string, role: 'user' | 'assistant') => {
@@ -87,9 +88,9 @@ function App() {
     setItems(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
   };
 
-  const handleAddItem = (item: CanvasItem) => {
-    setItems(prev => [...prev, item]);
-    setSelectedId(item.id);
+  const handleDeleteItems = (ids: string[]) => {
+    setItems(prev => prev.filter(i => !ids.includes(i.id)));
+    setSelectedIds([]);
   };
 
   const executePlan = async (steps: any[]) => {
@@ -187,7 +188,15 @@ function App() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => { if(confirm('确定清空匠心画布吗？')) { setItems([]); setPlan([]); setMessages([]); } }} className="p-2 text-gray-300 hover:text-red-500 rounded-xl transition-all"><Trash2 size={18} /></button>
+            <button 
+              onClick={() => setShowSidebar(!showSidebar)} 
+              className={`p-2 rounded-xl transition-all ${showSidebar ? 'text-indigo-600 bg-indigo-50' : 'text-gray-400 hover:bg-gray-100'}`}
+              title={showSidebar ? "隐藏侧边栏" : "显示侧边栏"}
+            >
+              {showSidebar ? <PanelRightClose size={18} /> : <PanelRight size={18} />}
+            </button>
+            <div className="h-4 w-[1px] bg-gray-100 mx-1" />
+            <button onClick={() => { if(confirm('确定清空匠心画布吗？')) { setItems([]); setPlan([]); setMessages([]); setSelectedIds([]); } }} className="p-2 text-gray-300 hover:text-red-500 rounded-xl transition-all"><Trash2 size={18} /></button>
             <div className="h-4 w-[1px] bg-gray-100 mx-1" />
             <button className="px-5 py-2 text-xs font-black bg-black text-white rounded-xl shadow-lg hover:opacity-90 active:scale-95 transition-all uppercase tracking-widest">
               交付作品
@@ -196,10 +205,17 @@ function App() {
         </header>
 
         <Canvas 
-          items={items} zoom={zoom} pan={pan} onPanChange={setPan} onItemUpdate={handleUpdateItem}
-          onItemDelete={(id) => { setItems(prev => prev.filter(i => i.id !== id)); setSelectedId(null); }}
-          onItemAdd={handleAddItem}
-          selectedId={selectedId} setSelectedId={setSelectedId}
+          items={items} 
+          zoom={zoom} 
+          onZoomChange={setZoom}
+          pan={pan} 
+          onPanChange={setPan} 
+          onItemUpdate={handleUpdateItem}
+          onItemDelete={(id) => handleDeleteItems([id])}
+          onItemDeleteMultiple={handleDeleteItems}
+          onItemAdd={(item) => { setItems(prev => [...prev, item]); setSelectedIds([item.id]); }}
+          selectedIds={selectedIds} 
+          setSelectedIds={setSelectedIds}
         />
         
         <Toolbar 
@@ -212,16 +228,18 @@ function App() {
         />
       </div>
 
-      <Sidebar messages={messages} plan={plan} isThinking={isThinking} onSendMessage={async (t) => {
-        addMessage(t, 'user');
-        setIsThinking(true);
-        try {
-          const result = await generatePlan(t);
-          if (result.steps?.length) {
-            executePlan(result.steps);
-          }
-        } finally { setIsThinking(false); }
-      }} />
+      <div className={`transition-all duration-300 ease-in-out ${showSidebar ? 'w-96 opacity-100 translate-x-0' : 'w-0 opacity-0 translate-x-full'}`}>
+        <Sidebar messages={messages} plan={plan} isThinking={isThinking} onSendMessage={async (t) => {
+          addMessage(t, 'user');
+          setIsThinking(true);
+          try {
+            const result = await generatePlan(t);
+            if (result.steps?.length) {
+              executePlan(result.steps);
+            }
+          } finally { setIsThinking(false); }
+        }} />
+      </div>
     </div>
   );
 }
