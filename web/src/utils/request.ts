@@ -195,7 +195,7 @@ const getFriendlyErrorMessage = (error: AxiosError): string => {
 };
 
 // API 基础配置
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
 const TIMEOUT = 300000; // 30秒超时
 
 // 创建 axios 实例

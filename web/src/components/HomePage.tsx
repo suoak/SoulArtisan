@@ -1,27 +1,76 @@
-import React, { useState, useContext } from 'react';
-import { Sparkles, Plus, ArrowUp, Hammer, Bot, Image as ImageIcon, Video, FolderPlus, User, LogOut, ChevronDown } from 'lucide-react';
+import React, { useState, useContext, useRef } from 'react';
+import { Sparkles, Plus, ArrowUp, Hammer, Bot, Image as ImageIcon, FolderPlus, User, LogOut, ChevronDown, X, Loader2 } from 'lucide-react';
 import AuthContext from '@/contexts/AuthContext';
+import { upload, showError, showSuccess } from '@/utils/request';
+
+interface UploadedFile {
+  id: number;
+  url: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+}
 
 interface HomePageProps {
-  onStart: (prompt: string) => void;
+  onStart: (prompt: string, uploadedFile?: UploadedFile) => void;
   onEnterCanvas: () => void;
   onGoLogin: () => void;
   onGoRegister: () => void;
 }
 
-type CreationMode = 'chat' | 'image' | 'video';
+type CreationMode = 'chat' | 'image';
 
 const HomePage: React.FC<HomePageProps> = ({ onStart, onEnterCanvas, onGoLogin, onGoRegister }) => {
   const auth = useContext(AuthContext);
   const [input, setInput] = useState('');
   const [activeMode, setActiveMode] = useState<CreationMode>('image');
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (input.trim()) {
-      onStart(input);
+      onStart(input, uploadedFile || undefined);
     }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 验证文件类型
+    if (!file.type.startsWith('image/')) {
+      showError('请选择图片文件');
+      return;
+    }
+
+    // 验证文件大小 (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      showError('图片大小不能超过10MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const response = await upload<{ code: number; data: UploadedFile }>('/api/file/upload', file);
+      if (response.data.code === 200) {
+        setUploadedFile(response.data.data);
+        showSuccess('图片上传成功');
+      }
+    } catch {
+      showError('图片上传失败');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setUploadedFile(null);
   };
 
   const handleLogout = () => {
@@ -134,8 +183,7 @@ const HomePage: React.FC<HomePageProps> = ({ onStart, onEnterCanvas, onGoLogin, 
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={
                   activeMode === 'chat' ? "与灵匠对话，探索创意边界..." :
-                  activeMode === 'image' ? "描述您想要创造的画面..." :
-                  "构思一段惊艳的视觉序列..."
+                  "描述您想要创造的画面..."
                 }
                 className="w-full text-xl font-medium text-gray-800 placeholder:text-gray-300 outline-none resize-none h-24 py-2 bg-transparent"
                 onKeyDown={(e) => {
@@ -147,10 +195,46 @@ const HomePage: React.FC<HomePageProps> = ({ onStart, onEnterCanvas, onGoLogin, 
               />
             </div>
 
+            {/* 已上传图片预览 */}
+            {uploadedFile && (
+              <div className="px-4">
+                <div className="relative inline-block">
+                  <img
+                    src={uploadedFile.url}
+                    alt={uploadedFile.fileName}
+                    className="h-20 w-20 object-cover rounded-xl border border-gray-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveFile}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between px-2 pb-2">
               <div className="flex items-center gap-2.5">
-                <button type="button" className="group w-10 h-10 border border-gray-100 rounded-xl flex items-center justify-center text-gray-400 hover:bg-gray-50 transition-all">
-                  <Plus size={20} className="group-hover:rotate-90 transition-transform" />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="group w-10 h-10 border border-gray-100 rounded-xl flex items-center justify-center text-gray-400 hover:bg-gray-50 transition-all disabled:opacity-50"
+                >
+                  {uploading ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : (
+                    <Plus size={20} className="group-hover:rotate-90 transition-transform" />
+                  )}
                 </button>
 
                 {/* 模式切换器 */}
@@ -172,15 +256,6 @@ const HomePage: React.FC<HomePageProps> = ({ onStart, onEnterCanvas, onGoLogin, 
                     }`}
                   >
                     <ImageIcon size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveMode('video')}
-                    className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${
-                      activeMode === 'video' ? 'bg-[#f3f4f6] text-gray-800 shadow-sm' : 'text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    <Video size={18} />
                   </button>
                 </div>
               </div>
