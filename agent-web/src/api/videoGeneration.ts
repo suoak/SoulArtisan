@@ -14,6 +14,8 @@ export interface CreateVideoParams {
     callbackUrl?: string;
     projectId?: number;
     scriptId?: number;
+    channel?: string;
+    model?: string;
 }
 
 export interface VideoTask {
@@ -53,18 +55,10 @@ export const createVideo = async (params: CreateVideoParams): Promise<ApiRespons
 };
 
 /**
- * 查询任务状态（根据数据库ID）
+ * 查询任务状态
  */
 export const getTaskStatus = async (taskId: number): Promise<ApiResponse<VideoTask>> => {
     const response = await get<ApiResponse<VideoTask>>(`/api/video/task/${taskId}`);
-    return response.data;
-};
-
-/**
- * 查询任务状态（根据外部任务ID）
- */
-export const getTaskStatusByTaskId = async (taskId: string): Promise<ApiResponse<VideoTask>> => {
-    const response = await get<ApiResponse<VideoTask>>(`/api/video/task/by-task-id/${taskId}`);
     return response.data;
 };
 
@@ -187,7 +181,6 @@ export const generateVideo = async (
 export default {
     createVideo,
     getTaskStatus,
-    getTaskStatusByTaskId,
     getTaskList,
     deleteTask,
     pollTaskUntilComplete,

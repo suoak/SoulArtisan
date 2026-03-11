@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Handle, Position, useReactFlow } from 'reactflow';
 import type { Node } from 'reactflow';
 import { generateImageFromText, generateImageFromImage, getTaskStatus } from '../../../api/imageGeneration';
-import { cameraImageToVideoPrompt, extractVideoResource } from '../../../api/playbook';
+import { cameraImageToVideoPrompt, extractVideoResource, getCameraPrompt } from '../../../api/playbook';
 import { createVideo, type CreateVideoParams } from '../../../api/videoGeneration';
 import { getPictureResourcesByScript, getPictureResourcesByProject, type PictureResource } from '../../../api/pictureResource';
 import { getProjectResources, type VideoResourceInfo } from '../../../api/videoResource';
 import type { ImageTask } from '../../../api/imageGeneration';
 import type { ImageEnums } from '../../../api/enums';
-import { showWarning, showSuccess, showError } from '../../../utils/request';
+import { showWarning, showSuccess, showError, upload } from '../../../utils/request';
 import { useWorkflowStore } from '../hooks/useWorkflowStore';
 import ReferenceImageSelectionModal from '../ReferenceImageSelectionModal';
 import './StoryboardImageNode.css';
@@ -51,7 +51,7 @@ const MAX_REFERENCE_IMAGES = 5;
 
 const StoryboardImageNode: React.FC<StoryboardImageNodeProps> = ({ data, id }) => {
   const { getNodes, setNodes, setEdges, getEdges } = useReactFlow();
-  const { getEnumsCache } = useWorkflowStore();
+  const { getEnumsCache, getImageChannel, getImageModel, getVideoChannel, getVideoModel, channelSettings } = useWorkflowStore();
 
   // Tab 状态
   const [activeTab, setActiveTab] = useState<TabType>('original');
@@ -85,9 +85,15 @@ const StoryboardImageNode: React.FC<StoryboardImageNodeProps> = ({ data, id }) =
   // 获取视频提示词状态
   const [isGettingVideoPrompt, setIsGettingVideoPrompt] = useState(false);
 
+  // 获取分镜图提示词状态
+  const [isGettingStoryboardPrompt, setIsGettingStoryboardPrompt] = useState(false);
+
   // 转视频相关状态
   const [videoAspectRatio, setVideoAspectRatio] = useState<'16:9' | '9:16'>(data.videoAspectRatio || '16:9');
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+
+  // 上传替换分镜图状态
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   // 视频资源相关状态
   const [isExtractingResource, setIsExtractingResource] = useState(false);
@@ -328,6 +334,12 @@ const StoryboardImageNode: React.FC<StoryboardImageNodeProps> = ({ data, id }) =
       return;
     }
 
+    // 渠道校验
+    if (!getImageChannel() || !getImageModel()) {
+      showWarning('请先在渠道设置中选择图片生成渠道');
+      return;
+    }
+
     // 生图使用 prompt（分镜规划提示词）
     const imagePrompt = prompt.trim();
 
@@ -360,8 +372,10 @@ const StoryboardImageNode: React.FC<StoryboardImageNodeProps> = ({ data, id }) =
           {
             prompt: finalImagePrompt,
             imageUrls: referenceImages,
-            aspectRatio: size as 'auto' | '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9',
+            aspectRatio: size as '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9',
             imageSize: imageSize as '1K' | '2K' | '4K',
+            channel: getImageChannel() || undefined,
+            model: getImageModel() || undefined,
           },
           (status) => {
             console.log('图生图状态:', status);
@@ -371,8 +385,10 @@ const StoryboardImageNode: React.FC<StoryboardImageNodeProps> = ({ data, id }) =
         task = await generateImageFromText(
           {
             prompt: finalImagePrompt,
-            aspectRatio: size as 'auto' | '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9',
+            aspectRatio: size as '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9',
             imageSize: imageSize as '1K' | '2K' | '4K',
+            channel: getImageChannel() || undefined,
+            model: getImageModel() || undefined,
           },
           (status) => {
             console.log('文生图状态:', status);
@@ -430,6 +446,49 @@ const StoryboardImageNode: React.FC<StoryboardImageNodeProps> = ({ data, id }) =
   };
 
   /**
+   * 获取分镜图提示词
+   */
+  const handleGetStoryboardPrompt = async () => {
+    if (isGettingStoryboardPrompt) {
+      return;
+    }
+
+    const content = originalText.trim();
+    if (!content) {
+      showWarning('暂无分镜文案');
+      return;
+    }
+
+    setIsGettingStoryboardPrompt(true);
+
+    try {
+      const result = await getCameraPrompt(content, channelSettings.chatModel || undefined);
+
+      if (result.code === 200 && result.data) {
+        setPrompt(result.data);
+        updateNodeData({ prompt: result.data });
+        setActiveTab('storyboard');
+        showSuccess('分镜图提示词获取成功');
+      } else {
+        showWarning(result.msg || '获取分镜图提示词失败');
+      }
+    } catch (error) {
+      console.error('获取分镜图提示词失败:', error);
+      const errorMessage = error instanceof Error ? error.message : '获取分镜图提示词失败';
+      showWarning(errorMessage);
+    } finally {
+      setIsGettingStoryboardPrompt(false);
+    }
+  };
+
+  // 节点初始化时自动获取分镜图提示词
+  useEffect(() => {
+    if (originalText && !prompt && !isGettingStoryboardPrompt) {
+      handleGetStoryboardPrompt();
+    }
+  }, []);
+
+  /**
    * 获取视频提示词
    */
   const handleGetVideoPrompt = async () => {
@@ -451,6 +510,7 @@ const StoryboardImageNode: React.FC<StoryboardImageNodeProps> = ({ data, id }) =
       const result = await cameraImageToVideoPrompt({
         content,
         mediaUrl: imageUrl || undefined,
+        model: channelSettings.chatModel || undefined,
       });
 
       if (result.code === 200 && result.data) {
@@ -559,6 +619,7 @@ const StoryboardImageNode: React.FC<StoryboardImageNodeProps> = ({ data, id }) =
           type: r.resourceType,
           videoUrl: r.videoResultUrl || undefined,
         })),
+        model: channelSettings.chatModel || undefined,
       });
 
       if (extractResult.code !== 200) {
@@ -595,28 +656,35 @@ const StoryboardImageNode: React.FC<StoryboardImageNodeProps> = ({ data, id }) =
   }, [videoPrompt, videoResources]);
 
   /**
-   * 转视频功能 - 传递分镜图和视频提示词
+   * 转视频功能 - 传递视频提示词和分镜图
    */
   const handleConvertToVideo = async () => {
     if (isGeneratingVideo) {
       return;
     }
 
-    // 分镜图片和提示词必须有一个不为空
-    const currentImageUrl = imageUrl?.trim();
-    const currentVideoPrompt = videoPrompt.trim();
-    if (!currentImageUrl && !currentVideoPrompt) {
+    // 渠道校验
+    if (!getVideoChannel() || !getVideoModel()) {
+      showWarning('请先在渠道设置中选择视频生成渠道');
+      return;
+    }
+
+    // 分镜图片和提示词必须有一个
+    let finalVideoPrompt = videoPrompt.trim();
+    if (!imageUrl && !finalVideoPrompt) {
       showWarning('请先生成分镜图或获取视频提示词');
       return;
     }
 
-    // 构建最终的视频提示词
-    let finalVideoPrompt = currentVideoPrompt;
+    // 如果没有视频提示词，使用原文本作为备选
+    if (!finalVideoPrompt && originalText) {
+      finalVideoPrompt = originalText.trim();
+    }
 
-    // 将风格对应的提示词加到视频提示词开头（使用 prompt 而不是 label）
+    // 将风格对应的提示词加到视频提示词开头
     if (style && finalVideoPrompt) {
       const styleOption = enums.styles?.find(s => s.value === style);
-      const stylePrompt = styleOption?.prompt || style;
+      const stylePrompt = styleOption?.label || style;
       finalVideoPrompt = `${stylePrompt}, ${finalVideoPrompt}`;
     }
 
@@ -631,16 +699,21 @@ const StoryboardImageNode: React.FC<StoryboardImageNodeProps> = ({ data, id }) =
         throw new Error('未找到当前节点');
       }
 
-      // 创建视频任务 - 传递分镜图和视频提示词
+      // 创建视频任务 - 传递视频提示词和分镜图
       const params: CreateVideoParams = {
-        prompt: finalVideoPrompt || '', // 如果没有提示词，传空字符串
+        prompt: finalVideoPrompt,
         aspectRatio: videoAspectRatio,
         duration: 15,
         projectId: currentProjectId || undefined,
         scriptId: currentScriptId || undefined,
-        // 如果有分镜图，添加到 imageUrls
-        imageUrls: currentImageUrl ? [currentImageUrl] : undefined,
+        channel: getVideoChannel() || undefined,
+        model: getVideoModel() || undefined,
       };
+
+      // 如果有分镜图，添加到参数中
+      if (imageUrl) {
+        params.imageUrls = [imageUrl];
+      }
 
       const result = await createVideo(params);
 
@@ -686,6 +759,58 @@ const StoryboardImageNode: React.FC<StoryboardImageNodeProps> = ({ data, id }) =
     }
   };
 
+  /**
+   * 上传替换分镜图
+   */
+  const handleUploadReplaceImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // 验证文件类型
+    if (!file.type.startsWith('image/')) {
+      showWarning('请选择图片文件');
+      return;
+    }
+
+    // 验证文件大小（限制 10MB）
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      showWarning('图片大小不能超过 10MB');
+      return;
+    }
+
+    try {
+      setIsUploadingImage(true);
+
+      const response = await upload<{ code: number; data: { url: string }; message?: string }>(
+        '/api/file/upload',
+        file
+      );
+
+      if (response.data.code === 200 && response.data.data?.url) {
+        const newImageUrl = response.data.data.url;
+        setImageUrl(newImageUrl);
+        setImageStatus('success');
+        setImageErrorMessage('');
+        updateNodeData({
+          imageUrl: newImageUrl,
+          imageStatus: 'success',
+          imageErrorMessage: '',
+        });
+        showSuccess('图片替换成功');
+      } else {
+        throw new Error(response.data.message || '上传失败');
+      }
+    } catch (error) {
+      console.error('图片上传失败:', error);
+      showError('图片上传失败');
+    } finally {
+      setIsUploadingImage(false);
+      // 清空 input，允许重复上传同一文件
+      event.target.value = '';
+    }
+  };
+
 
   return (
     <div className="storyboard-image-node">
@@ -720,23 +845,19 @@ const StoryboardImageNode: React.FC<StoryboardImageNodeProps> = ({ data, id }) =
             </div>
             {/* 角标按钮 */}
             <div className="si-image-actions">
-              <label className="si-image-action-btn si-upload-replace-btn" title="上传替换" onClick={(e) => e.stopPropagation()}>
+              <label
+                className={`si-image-action-btn si-upload-replace-btn ${isUploadingImage ? 'uploading' : ''}`}
+                title={isUploadingImage ? '上传中...' : '上传替换'}
+                onClick={(e) => e.stopPropagation()}
+              >
                 <input
                   type="file"
                   accept="image/*"
                   style={{ display: 'none' }}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      // TODO: 实现上传替换逻辑
-                      showWarning('上传替换功能开发中');
-                    }
-                    e.target.value = '';
-                  }}
+                  disabled={isUploadingImage}
+                  onChange={handleUploadReplaceImage}
                 />
-                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 15V3M12 3l-4 4M12 3l4 4M5 21h14" />
-                </svg>
+                {isUploadingImage ? '...' : '⬆'}
               </label>
               <button
                 className="si-image-action-btn si-download-btn"
@@ -753,15 +874,26 @@ const StoryboardImageNode: React.FC<StoryboardImageNodeProps> = ({ data, id }) =
                   document.body.removeChild(link);
                 }}
               >
-                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 3v12M12 15l-4-4M12 15l4-4M5 21h14" />
-                </svg>
+                ⬇
               </button>
             </div>
           </div>
         ) : (
           <div className="si-image-empty">
             <span>暂无分镜图</span>
+            <label
+              className={`si-empty-upload-btn ${isUploadingImage ? 'uploading' : ''}`}
+              title={isUploadingImage ? '上传中...' : '上传图片'}
+            >
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                disabled={isUploadingImage}
+                onChange={handleUploadReplaceImage}
+              />
+              {isUploadingImage ? '上传中...' : '+ 上传图片'}
+            </label>
           </div>
         )}
       </div>
@@ -817,13 +949,23 @@ const StoryboardImageNode: React.FC<StoryboardImageNodeProps> = ({ data, id }) =
 
           {activeTab === 'storyboard' && (
             <div className="si-section">
-              <textarea
-                className="si-textarea nodrag nowheel"
-                value={prompt}
-                onChange={(e) => handlePromptChange(e.target.value)}
-                placeholder="描述分镜画面..."
-                rows={6}
-              />
+              <div className="si-textarea-wrapper">
+                <textarea
+                  className="si-textarea nodrag nowheel"
+                  value={prompt}
+                  onChange={(e) => handlePromptChange(e.target.value)}
+                  placeholder="描述分镜画面..."
+                  rows={6}
+                />
+                <button
+                  className="si-refresh-prompt-btn"
+                  onClick={handleGetStoryboardPrompt}
+                  disabled={isGettingStoryboardPrompt || !originalText}
+                  title="重新获取分镜图提示词"
+                >
+                  {isGettingStoryboardPrompt ? '获取中...' : '🔄 重新生成'}
+                </button>
+              </div>
             </div>
           )}
 

@@ -7,8 +7,10 @@ import {del, get, post} from '../utils/request';
 // 类型定义
 export interface TextToImageParams {
     prompt: string;
-    aspectRatio?: 'auto' | '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9';
+    aspectRatio?: '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9';
     imageSize?: '1K' | '2K' | '4K';
+    channel?: string;
+    model?: string;
 }
 
 export interface ImageToImageParams extends TextToImageParams {

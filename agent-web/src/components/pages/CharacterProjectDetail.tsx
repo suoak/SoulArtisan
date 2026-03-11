@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   getProject,
@@ -14,16 +14,14 @@ import {
   getStoryboards,
   generateStoryboardVideo,
   batchGenerateStoryboards,
-  updateStoryboard,
   deleteStoryboard,
   type CharacterProject,
   type ProjectResource,
   type Storyboard,
 } from '@/api/characterProject';
-import { getTaskStatusByTaskId } from '@/api/videoGeneration';
-import { updateVideoResource, getVideoResource } from '@/api/videoResource';
 import { analysisAssetVideo, analysisCamera } from '@/api/playbook';
 import { getSimpleScriptList } from '@/api/script';
+import { useWorkflowStore } from '@/components/dashboard/hooks/useWorkflowStore';
 import { showWarning, showSuccess, showInfo } from '@/utils/request';
 import CharacterProjectResourceTable from './CharacterProjectResourceTable';
 import './CharacterProjectDetail.css';
@@ -31,6 +29,7 @@ import './CharacterProjectDetail.css';
 const CharacterProjectDetail: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const { channelSettings } = useWorkflowStore();
 
   // 项目信息
   const [project, setProject] = useState<CharacterProject | null>(null);
@@ -58,14 +57,6 @@ const CharacterProjectDetail: React.FC = () => {
   const [showExtractStoryboardModal, setShowExtractStoryboardModal] = useState(false);
   const [extractCount, setExtractCount] = useState(10);
   const [extractingStoryboards, setExtractingStoryboards] = useState(false);
-  // 视频提示词编辑状态
-  const [editingPromptId, setEditingPromptId] = useState<number | null>(null);
-  const [editingPromptValue, setEditingPromptValue] = useState('');
-  const [savingPrompt, setSavingPrompt] = useState(false);
-
-  // 轮询定时器引用
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const characterPollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (projectId) {
@@ -85,210 +76,6 @@ const CharacterProjectDetail: React.FC = () => {
       }
     }
   }, [project]);
-
-  // 轮询检查视频生成中的资源状态（单条查询）
-  useEffect(() => {
-    // 获取处于视频生成中状态且有videoTaskId的资源
-    const generatingResources = resources.filter(
-      (r) => r.status === 'video_generating' && r.videoTaskId
-    );
-
-    // 如果没有生成中的资源，清除定时器
-    if (generatingResources.length === 0) {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-        pollIntervalRef.current = null;
-      }
-      return;
-    }
-
-    // 如果已经有定时器在运行，不要创建新的
-    if (pollIntervalRef.current) {
-      return;
-    }
-
-    // 设置定时器，每10秒查询一次视频任务状态
-    pollIntervalRef.current = setInterval(async () => {
-      // 获取当前需要轮询的资源
-      const currentGenerating = resources.filter(
-        (r) => r.status === 'video_generating' && r.videoTaskId
-      );
-
-      if (currentGenerating.length === 0) {
-        if (pollIntervalRef.current) {
-          clearInterval(pollIntervalRef.current);
-          pollIntervalRef.current = null;
-        }
-        return;
-      }
-
-      // 逐个查询任务状态
-      for (const resource of currentGenerating) {
-        try {
-          // videoTaskId 存储的是外部taskId，使用 by-task-id 接口查询
-          const result = await getTaskStatusByTaskId(resource.videoTaskId!);
-          if (result.code !== 200) {
-            console.error('查询任务状态失败:', result.msg);
-            continue;
-          }
-
-          const task = result.data;
-
-          // 根据任务状态更新资源
-          if (task.status === 'succeeded' && task.resultUrl) {
-            // 更新数据库
-            await updateVideoResource(resource.id, {
-              videoUrl: task.resultUrl,
-              videoResultUrl: task.resultUrl,
-              status: 'video_generated',
-            });
-
-            // 更新本地状态
-            setResources((prev) =>
-              prev.map((r) =>
-                r.id === resource.id
-                  ? {
-                      ...r,
-                      videoUrl: task.resultUrl!,
-                      videoResultUrl: task.resultUrl!,
-                      status: 'video_generated' as const,
-                    }
-                  : r
-              )
-            );
-
-            showSuccess(`资源 "${resource.resourceName}" 视频生成完成`);
-          } else if (task.status === 'error') {
-            // 更新数据库
-            await updateVideoResource(resource.id, {
-              status: 'failed',
-              errorMessage: task.errorMessage || '视频生成失败',
-            });
-
-            // 更新本地状态
-            setResources((prev) =>
-              prev.map((r) =>
-                r.id === resource.id
-                  ? {
-                      ...r,
-                      status: 'failed' as const,
-                      errorMessage: task.errorMessage || '视频生成失败',
-                    }
-                  : r
-              )
-            );
-
-            showWarning(`资源 "${resource.resourceName}" 视频生成失败`);
-          }
-        } catch (error) {
-          console.error('轮询任务状态失败:', error);
-        }
-      }
-    }, 10000);
-
-    // 清理函数
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-        pollIntervalRef.current = null;
-      }
-    };
-  }, [resources]);
-
-  // 轮询检查角色生成中的资源状态（单条查询）
-  useEffect(() => {
-    // 获取处于角色生成中状态的资源
-    const generatingResources = resources.filter(
-      (r) => r.status === 'character_generating'
-    );
-
-    // 如果没有角色生成中的资源，清除定时器
-    if (generatingResources.length === 0) {
-      if (characterPollIntervalRef.current) {
-        clearInterval(characterPollIntervalRef.current);
-        characterPollIntervalRef.current = null;
-      }
-      return;
-    }
-
-    // 如果已经有定时器在运行，不要创建新的
-    if (characterPollIntervalRef.current) {
-      return;
-    }
-
-    // 设置定时器，每10秒查询一次角色生成状态
-    characterPollIntervalRef.current = setInterval(async () => {
-      // 获取当前需要轮询的资源
-      const currentGenerating = resources.filter(
-        (r) => r.status === 'character_generating'
-      );
-
-      if (currentGenerating.length === 0) {
-        if (characterPollIntervalRef.current) {
-          clearInterval(characterPollIntervalRef.current);
-          characterPollIntervalRef.current = null;
-        }
-        return;
-      }
-
-      // 逐个查询资源状态（后端会主动刷新角色生成状态）
-      for (const resource of currentGenerating) {
-        try {
-          const result = await getVideoResource(resource.id);
-          if (result.code !== 200) {
-            console.error('查询资源状态失败:', result.msg);
-            continue;
-          }
-
-          const updatedResource = result.data;
-
-          // 根据资源状态更新本地状态
-          if (updatedResource.status === 'completed') {
-            // 更新本地状态，只更新必要字段
-            setResources((prev) =>
-              prev.map((r) =>
-                r.id === resource.id
-                  ? {
-                      ...r,
-                      status: 'completed' as const,
-                      characterId: updatedResource.characterId ?? undefined,
-                      characterImageUrl: updatedResource.characterImageUrl ?? undefined,
-                    }
-                  : r
-              )
-            );
-
-            showSuccess(`资源 "${resource.resourceName}" 角色生成完成`);
-          } else if (updatedResource.status === 'failed') {
-            // 更新本地状态，只更新必要字段
-            setResources((prev) =>
-              prev.map((r) =>
-                r.id === resource.id
-                  ? {
-                      ...r,
-                      status: 'failed' as const,
-                      errorMessage: updatedResource.errorMessage ?? undefined,
-                    }
-                  : r
-              )
-            );
-
-            showWarning(`资源 "${resource.resourceName}" 角色生成失败`);
-          }
-        } catch (error) {
-          console.error('轮询角色生成状态失败:', error);
-        }
-      }
-    }, 10000);
-
-    // 清理函数
-    return () => {
-      if (characterPollIntervalRef.current) {
-        clearInterval(characterPollIntervalRef.current);
-        characterPollIntervalRef.current = null;
-      }
-    };
-  }, [resources]);
 
   const loadProject = async () => {
     setLoading(true);
@@ -378,7 +165,7 @@ const CharacterProjectDetail: React.FC = () => {
     setExtracting(true);
     try {
       // 使用与剧本详情相同的视频资源解析接口
-      const result = await analysisAssetVideo(extractScriptContent.trim());
+      const result = await analysisAssetVideo(extractScriptContent.trim(), channelSettings.chatModel || undefined);
 
       if (result.code !== 200) {
         throw new Error(result.msg || '解析失败');
@@ -612,31 +399,29 @@ const CharacterProjectDetail: React.FC = () => {
     setExtractingStoryboards(true);
     try {
       // 使用 playbook-analysis/camera 接口解析分镜
-      // 返回格式: [{id, copywriting, prompt}, ...]
       const result = await analysisCamera({
         content: project.scriptContent,
         characterProjectId: Number(projectId),
         style: project.style,
         storyboardCount: extractCount,
+        model: channelSettings.chatModel || undefined,
       });
 
       if (result.code !== 200) {
         throw new Error(result.msg || '解析分镜失败');
       }
 
-      // 新响应格式: 直接返回数组 [{id, copywriting, prompt}, ...]
-      const storyboardData = Array.isArray(result.data) ? result.data : [];
+      const storyboardData = result.data?.storyboard || [];
       if (storyboardData.length === 0) {
         showWarning('未提取到分镜');
         return;
       }
 
       // 转换数据格式并批量创建分镜
-      // id -> sceneNumber, copywriting -> sceneName, prompt -> sceneDescription
       await batchCreateStoryboards(Number(projectId), {
-        storyboards: storyboardData.map((s: { id: number; copywriting: string; prompt: string }, index: number) => ({
+        storyboards: storyboardData.map((s, index) => ({
           sceneNumber: s.id || (index + 1),
-          sceneName: s.copywriting || `分镜 ${index + 1}`,
+          sceneName: s.summary || `分镜 ${index + 1}`,
           sceneDescription: s.prompt || '',
           resources: [],
         })),
@@ -700,37 +485,6 @@ const CharacterProjectDetail: React.FC = () => {
     } catch (error) {
       console.error('删除分镜失败:', error);
       showWarning('删除分镜失败');
-    }
-  };
-
-  // 开始编辑视频提示词
-  const handleStartEditPrompt = (storyboard: Storyboard) => {
-    setEditingPromptId(storyboard.id);
-    setEditingPromptValue(storyboard.videoPrompt || '');
-  };
-
-  // 取消编辑视频提示词
-  const handleCancelEditPrompt = () => {
-    setEditingPromptId(null);
-    setEditingPromptValue('');
-  };
-
-  // 保存视频提示词
-  const handleSaveVideoPrompt = async (storyboardId: number) => {
-    setSavingPrompt(true);
-    try {
-      await updateStoryboard(Number(projectId), storyboardId, {
-        videoPrompt: editingPromptValue,
-      });
-      await loadStoryboards();
-      setEditingPromptId(null);
-      setEditingPromptValue('');
-      showSuccess('视频提示词保存成功');
-    } catch (error) {
-      console.error('保存视频提示词失败:', error);
-      showWarning('保存视频提示词失败');
-    } finally {
-      setSavingPrompt(false);
     }
   };
 
@@ -997,12 +751,10 @@ const CharacterProjectDetail: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  {/* 匹配的资源 */}
                   {(() => {
                     const matchedResources = getMatchedResources(storyboard.sceneDescription);
                     return matchedResources.length > 0 ? (
                       <div className="cpd-storyboard-resources">
-                        <span className="cpd-storyboard-resources-label">引用资源:</span>
                         {matchedResources.map((resource) => (
                           <div key={resource.id} className="cpd-resource-tag">
                             {resource.characterImageUrl ? (
@@ -1022,88 +774,6 @@ const CharacterProjectDetail: React.FC = () => {
                       </div>
                     ) : null;
                   })()}
-                  {/* 视频提示词编辑区 */}
-                  <div className="cpd-storyboard-prompt">
-                    <div className="cpd-storyboard-prompt-header">
-                      <span className="cpd-storyboard-prompt-label">视频提示词:</span>
-                      {editingPromptId !== storyboard.id && (
-                        <button
-                          className="cpd-btn-text"
-                          onClick={() => handleStartEditPrompt(storyboard)}
-                        >
-                          编辑
-                        </button>
-                      )}
-                    </div>
-                    {editingPromptId === storyboard.id ? (
-                      <div className="cpd-storyboard-prompt-edit">
-                        <textarea
-                          value={editingPromptValue}
-                          onChange={(e) => setEditingPromptValue(e.target.value)}
-                          placeholder="请输入视频提示词..."
-                          rows={3}
-                        />
-                        <div className="cpd-storyboard-prompt-actions">
-                          <button
-                            className="cpd-btn-small cpd-btn-secondary"
-                            onClick={handleCancelEditPrompt}
-                            disabled={savingPrompt}
-                          >
-                            取消
-                          </button>
-                          <button
-                            className="cpd-btn-small cpd-btn-primary"
-                            onClick={() => handleSaveVideoPrompt(storyboard.id)}
-                            disabled={savingPrompt}
-                          >
-                            {savingPrompt ? '保存中...' : '保存'}
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="cpd-storyboard-prompt-text">
-                        {storyboard.videoPrompt || '暂无视频提示词'}
-                      </p>
-                    )}
-                  </div>
-                  {/* 视频列表 */}
-                  {storyboard.videos && storyboard.videos.length > 0 && (
-                    <div className="cpd-storyboard-videos">
-                      <div className="cpd-storyboard-videos-header">
-                        <span className="cpd-storyboard-videos-label">生成的视频 ({storyboard.videos.length})</span>
-                      </div>
-                      <div className="cpd-storyboard-videos-grid">
-                        {storyboard.videos.map((video) => (
-                          <div key={video.id} className="cpd-storyboard-video-item">
-                            {video.videoUrl ? (
-                              <video
-                                src={video.videoUrl}
-                                controls
-                                className="cpd-storyboard-video-player"
-                              />
-                            ) : (
-                              <div className="cpd-storyboard-video-placeholder">
-                                <span className={`cpd-status-badge ${video.status}`}>
-                                  {getStatusLabel(video.status)}
-                                </span>
-                                {video.errorMessage && (
-                                  <p className="cpd-storyboard-video-error">{video.errorMessage}</p>
-                                )}
-                              </div>
-                            )}
-                            <div className="cpd-storyboard-video-info">
-                              <span className="cpd-storyboard-video-duration">
-                                {video.duration}秒 · {video.aspectRatio || '16:9'}
-                              </span>
-                              <span className="cpd-storyboard-video-date">
-                                {new Date(video.createdAt).toLocaleString()}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               ))
             )}

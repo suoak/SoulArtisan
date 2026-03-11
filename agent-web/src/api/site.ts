@@ -18,6 +18,11 @@ export interface SitePublicConfig {
   description?: string;
   footerText?: string;
   copyright?: string;
+  enableRegister?: boolean;
+  // 联系信息
+  contactAddress?: string;
+  contactPhone?: string;
+  contactEmail?: string;
 }
 
 /**

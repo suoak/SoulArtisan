@@ -17,6 +17,7 @@ const StoryDescriptionNode: React.FC<StoryDescriptionNodeProps> = ({ data, id })
   const { getNodes, setNodes, setEdges, getEdges } = useReactFlow();
   const currentProjectId = useWorkflowStore((state) => state.currentProjectId);
   const currentProjectStyle = useWorkflowStore((state) => state.currentProjectStyle);
+  const channelSettings = useWorkflowStore((state) => state.channelSettings);
 
   const [storyContent, setStoryContent] = useState(data.storyContent || '');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -66,6 +67,7 @@ const StoryDescriptionNode: React.FC<StoryDescriptionNodeProps> = ({ data, id })
         content: storyContent,
         characterProjectId: currentProjectId,
         style: currentProjectStyle || undefined,
+        model: channelSettings.chatModel || undefined,
       });
 
       if (response.code !== 200) {

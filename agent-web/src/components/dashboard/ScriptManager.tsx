@@ -307,7 +307,7 @@ const ScriptManager: React.FC = () => {
 
       {/* 创建剧本模态框 */}
       {showCreateModal && (
-        <div className="sm-modal-overlay" onClick={() => setShowCreateModal(false)}>
+        <div className="sm-modal-overlay">
           <div className="sm-modal" onClick={(e) => e.stopPropagation()}>
             <div className="sm-modal-header">
               <h2>创建新剧本</h2>

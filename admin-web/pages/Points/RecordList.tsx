@@ -41,7 +41,7 @@ const PointsRecordList: React.FC = () => {
       setCurrentPage(result.page);
       setPageSize(result.pageSize);
     } catch (error) {
-      message.error('加载积分记录失败');
+      message.error('加载算力记录失败');
       console.error(error);
     } finally {
       setLoading(false);
@@ -102,7 +102,7 @@ const PointsRecordList: React.FC = () => {
       render: (type: number) => getTypeTag(type)
     },
     {
-      title: '积分',
+      title: '算力',
       dataIndex: 'points',
       key: 'points',
       width: 100,
@@ -153,8 +153,8 @@ const PointsRecordList: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800">积分记录</h1>
-        <p className="text-gray-500 text-sm mt-1">查看用户积分收支记录</p>
+        <h1 className="text-2xl font-bold text-gray-800">算力记录</h1>
+        <p className="text-gray-500 text-sm mt-1">查看用户算力收支记录</p>
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm">

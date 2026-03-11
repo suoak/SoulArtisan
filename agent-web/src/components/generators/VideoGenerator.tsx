@@ -2,6 +2,7 @@ import React, {useState, useEffect, useRef} from 'react';
 import {generateVideo} from '../../api/videoGeneration';
 import type {CreateVideoParams} from '../../api/videoGeneration';
 import { getVideoEnums, type VideoEnums } from '../../api/enums';
+import { getCapabilities, type CapabilityInfo } from '../../api/capability';
 import { useAuth } from '../../hooks/useAuth';
 import { upload } from '../../utils/request';
 import { showSuccess } from '../../utils/request';
@@ -16,9 +17,10 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onGenerated }) => {
 
     const [prompt, setPrompt] = useState('');
     const [style, setStyle] = useState<string>(''); // 风格选择
-    const [aspectRatio, setAspectRatio] = useState<string>('16:9');
-    const [duration, setDuration] = useState<number>(10);
+    const [aspectRatio, setAspectRatio] = useState<string>('');
+    const [duration, setDuration] = useState<number>(0);
     const [imageUrl, setImageUrl] = useState<string>('');
+    const [channel, setChannel] = useState<string>('');
     const [status, setStatus] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -33,6 +35,9 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onGenerated }) => {
         styles: []
     });
     const [enumsLoading, setEnumsLoading] = useState(true);
+
+    // 渠道数据
+    const [videoChannels, setVideoChannels] = useState<{ channelType: string; channelName: string; price: number }[]>([]);
 
     /**
      * 加载枚举数据
@@ -50,6 +55,13 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onGenerated }) => {
                         durations: data.durations || [],
                         styles: data.styles || []
                     });
+                    // 设置默认值为枚举的第一个值
+                    if (data.aspectRatios?.length > 0) {
+                        setAspectRatio(String(data.aspectRatios[0].value));
+                    }
+                    if (data.durations?.length > 0) {
+                        setDuration(Number(data.durations[0].value));
+                    }
                 } else {
                     console.error('API返回的数据格式不正确:', data);
                     setError('加载配置失败，数据格式错误');
@@ -62,6 +74,36 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onGenerated }) => {
             }
         };
         loadEnums();
+    }, []);
+
+    /**
+     * 加载渠道数据
+     */
+    useEffect(() => {
+        const loadChannels = async () => {
+            try {
+                const response = await getCapabilities();
+                if (response.code === 200 && response.data) {
+                    // 过滤出视频类型的能力，提取渠道
+                    const channels: { channelType: string; channelName: string; price: number }[] = [];
+                    response.data
+                        .filter((cap: CapabilityInfo) => cap.type === 'video')
+                        .forEach((cap: CapabilityInfo) => {
+                            cap.channels.forEach(ch => {
+                                channels.push({
+                                    channelType: ch.channel_type,
+                                    channelName: ch.channel_name,
+                                    price: ch.price
+                                });
+                            });
+                        });
+                    setVideoChannels(channels);
+                }
+            } catch (err) {
+                console.error('加载渠道失败:', err);
+            }
+        };
+        loadChannels();
     }, []);
 
     /**
@@ -147,6 +189,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onGenerated }) => {
                 prompt: finalPrompt,
                 aspectRatio: aspectRatio as '16:9' | '9:16',
                 duration: duration as 10 | 15 | 25,
+                channel: channel || undefined,
             };
 
             if (imageUrl) {
@@ -163,7 +206,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onGenerated }) => {
             setPrompt('');
             setImageUrl('');
 
-            // 刷新用户积分
+            // 刷新用户算力
             refreshUserInfo();
 
             // 触发历史记录刷新
@@ -271,6 +314,33 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({ onGenerated }) => {
                     </select>
                 </div>
             </div>
+
+            {/* 渠道选择 */}
+            {videoChannels.length > 0 && (
+                <div className="video-form-group">
+                    <label className="video-form-label">
+                        渠道
+                    </label>
+                    <select
+                        value={channel}
+                        onChange={(e) => setChannel(e.target.value)}
+                        className="video-form-select"
+                        disabled={loading}
+                    >
+                        <option value="">默认</option>
+                        {videoChannels.map((ch) => (
+                            <option key={ch.channelType} value={ch.channelType}>
+                                {ch.channelName} - {ch.price}
+                            </option>
+                        ))}
+                    </select>
+                    {channel && (
+                        <small style={{ color: '#00d4ff', fontSize: '11px', display: 'block', marginTop: '4px' }}>
+                            使用 {videoChannels.find(c => c.channelType === channel)?.channelName} 渠道生成视频
+                        </small>
+                    )}
+                </div>
+            )}
 
             {/* 参考图 */}
             <div className="video-form-group">

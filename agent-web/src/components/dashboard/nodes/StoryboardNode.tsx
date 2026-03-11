@@ -37,6 +37,8 @@ const StoryboardNode: React.FC<StoryboardNodeProps> = ({ data, id }) => {
   const currentProjectId = useWorkflowStore((state) => state.currentProjectId);
   const currentScriptId = useWorkflowStore((state) => state.currentScriptId);
   const getEnumsCache = useWorkflowStore((state) => state.getEnumsCache);
+  const getVideoChannel = useWorkflowStore((state) => state.getVideoChannel);
+  const getVideoModel = useWorkflowStore((state) => state.getVideoModel);
 
   // 枚举数据
   const [enums, setEnums] = useState<{
@@ -274,6 +276,12 @@ const StoryboardNode: React.FC<StoryboardNodeProps> = ({ data, id }) => {
       return;
     }
 
+    // 渠道校验
+    if (!getVideoChannel() || !getVideoModel()) {
+      showWarning('请先在渠道设置中选择视频生成渠道');
+      return;
+    }
+
     const nodes = getNodes();
     const edges = getEdges();
 
@@ -330,6 +338,8 @@ const StoryboardNode: React.FC<StoryboardNodeProps> = ({ data, id }) => {
           imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
           projectId: currentProjectId || undefined,
           scriptId: currentScriptId || undefined,
+          channel: getVideoChannel() || undefined,
+          model: getVideoModel() || undefined,
         };
 
         // 调用视频生成接口

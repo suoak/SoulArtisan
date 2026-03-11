@@ -28,6 +28,7 @@ const Navbar: React.FC = () => {
       <div className="navbar-nav">
         <Link to="/" className="nav-link">首页</Link>
         <Link to="#features" className="nav-link">功能</Link>
+        <Link to="#pricing" className="nav-link">定价</Link>
         <Link to="#about" className="nav-link">关于</Link>
         <Link to="#contact" className="nav-link">联系</Link>
       </div>

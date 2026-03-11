@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { getSystemConfig } from '../../api/auth';
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import './Register.css';
 
 const Register: React.FC = () => {
@@ -14,27 +14,11 @@ const Register: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [enableRegister, setEnableRegister] = useState(true);
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { config: siteConfig } = useSiteConfig();
 
-  useEffect(() => {
-    const fetchSystemConfig = async () => {
-      try {
-        const response = await getSystemConfig();
-        if (response.code === 0 && response.data) {
-          setEnableRegister(response.data.enableRegister);
-          if (!response.data.enableRegister) {
-            setError('注册功能已关闭');
-          }
-        }
-      } catch (err) {
-        console.error('Failed to fetch system config:', err);
-      }
-    };
-
-    fetchSystemConfig();
-  }, []);
+  const enableRegister = siteConfig?.enableRegister ?? true;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,8 +30,8 @@ const Register: React.FC = () => {
       return;
     }
     
-    if (!username || !password || !confirmPassword) {
-      setError('用户名和密码不能为空');
+    if (!username || !password || !confirmPassword || !phone) {
+      setError('用户名、密码和手机号不能为空');
       return;
     }
     
@@ -69,7 +53,7 @@ const Register: React.FC = () => {
         password,
         email: email || undefined,
         nickname: nickname || undefined,
-        phone: phone || undefined
+        phone
       });
 
       if (result.success) {
@@ -163,13 +147,14 @@ const Register: React.FC = () => {
           </div>
           
           <div className="form-group">
-            <label htmlFor="phone">手机号</label>
+            <label htmlFor="phone">手机号 *</label>
             <input
               id="phone"
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="请输入手机号"
+              required
             />
           </div>
           

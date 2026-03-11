@@ -622,8 +622,8 @@ const UnifiedResourceModal: React.FC<UnifiedResourceModalProps> = ({ isOpen, onC
 
       {/* 图片预览 */}
       {previewImage && (
-        <div className="unified-preview-overlay" onClick={() => setPreviewImage(null)}>
-          <div className="unified-preview-content">
+        <div className="unified-preview-overlay" onClick={(e) => { e.stopPropagation(); setPreviewImage(null); }}>
+          <div className="unified-preview-content" onClick={(e) => e.stopPropagation()}>
             <img src={previewImage} alt="预览" />
             <button className="unified-preview-close" onClick={() => setPreviewImage(null)}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

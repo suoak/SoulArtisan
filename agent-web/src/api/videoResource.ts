@@ -37,6 +37,7 @@ export interface VideoResourceInfo {
   resourceType: ResourceType;
   prompt: string | null;
   aspectRatio: string | null;  // 视频尺寸: 16:9-横版, 9:16-竖版
+  referenceImageUrl: string | null;  // 参考图URL
   videoTaskId: string | null;
   videoUrl: string | null;
   videoResultUrl: string | null;
@@ -54,7 +55,6 @@ export interface VideoResourceInfo {
   createdAt: string;
   updatedAt: string;
   completedAt: string | null;
-  characterRequestedAt: string | null;  // 角色创建请求时间，用于超时重试判断
   // 兼容旧字段名
   projectId?: number;
 }
@@ -255,6 +255,7 @@ export const updateVideoResource = async (
     resourceType?: ResourceType;
     prompt?: string;
     aspectRatio?: string;
+    referenceImageUrl?: string;
     status?: ResourceStatus;
     videoTaskId?: string;
     videoUrl?: string;

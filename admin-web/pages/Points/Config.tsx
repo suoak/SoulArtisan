@@ -50,7 +50,7 @@ const PointsConfigPage: React.FC = () => {
       });
       form.setFieldsValue(formValues);
     } catch (error) {
-      message.error('加载积分配置失败');
+      message.error('加载算力配置失败');
       console.error(error);
     } finally {
       setLoading(false);
@@ -131,8 +131,8 @@ const PointsConfigPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <Title level={4} style={{ margin: 0 }}>积分扣除设置</Title>
-          <Text type="secondary">配置各功能消耗的积分数量</Text>
+          <Title level={4} style={{ margin: 0 }}>算力扣除设置</Title>
+          <Text type="secondary">配置各功能消耗的算力数量</Text>
         </div>
         <Button
           type="primary"
@@ -186,18 +186,18 @@ const PointsConfigPage: React.FC = () => {
 
                   <Form.Item
                     name={[config.configKey, 'configValue']}
-                    label="消耗积分"
+                    label="消耗算力"
                     style={{ marginBottom: 0 }}
                     rules={[
-                      { required: true, message: '请输入积分值' },
-                      { type: 'number', min: 0, message: '积分值不能为负数' }
+                      { required: true, message: '请输入算力值' },
+                      { type: 'number', min: 0, message: '算力值不能为负数' }
                     ]}
                   >
                     <InputNumber
                       min={0}
                       max={99999}
                       style={{ width: '100%' }}
-                      addonAfter="积分"
+                      addonAfter="算力"
                     />
                   </Form.Item>
                 </div>
@@ -212,10 +212,10 @@ const PointsConfigPage: React.FC = () => {
       <div className="bg-blue-50 p-4 rounded-lg">
         <Title level={5} style={{ margin: 0, marginBottom: 8 }}>说明</Title>
         <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
-          <li>设置为 0 积分表示该功能免费使用</li>
-          <li>禁用某项配置后，该功能将不扣除积分</li>
-          <li>用户积分不足时将无法使用相应功能</li>
-          <li>视频生成根据时长有不同的积分消耗</li>
+          <li>设置为 0 算力表示该功能免费使用</li>
+          <li>禁用某项配置后，该功能将不扣除算力</li>
+          <li>用户算力不足时将无法使用相应功能</li>
+          <li>视频生成根据时长有不同的算力消耗</li>
         </ul>
       </div>
     </div>

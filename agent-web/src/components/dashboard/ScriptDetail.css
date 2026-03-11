@@ -83,6 +83,31 @@
   height: 16px;
 }
 
+/* 渠道设置按钮 */
+.sd-settings-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 8px;
+  color: #818cf8;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sd-settings-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+.sd-settings-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* 加载和错误状态 */
 .sd-loading,
 .sd-error {
@@ -1787,106 +1812,97 @@
   font-weight: 500;
   color: #fff;
   max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .video-resource-name-display {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s;
 }
 
-.video-resource-name-display:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(99, 102, 241, 0.3);
+.video-resource-name-display:hover .name-edit-icon {
+  opacity: 1;
 }
 
 .video-resource-name-display.readonly {
   cursor: default;
 }
 
-.video-resource-name-display.readonly:hover {
-  background: rgba(255, 255, 255, 0.02);
-  border-color: rgba(255, 255, 255, 0.06);
-}
-
-.video-resource-name-display span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 13px;
-  color: #fff;
-}
-
-.video-resource-name-display .name-edit-icon {
+.name-edit-icon {
   width: 12px;
   height: 12px;
   color: rgba(255, 255, 255, 0.3);
   flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
-.video-resource-name-edit {
+/* 参考图列 */
+.video-resource-ref-image-cell {
+  width: 80px;
+  text-align: center;
+}
+
+.ref-image-uploading {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.ref-image-preview {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto;
+}
+
+.ref-image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.ref-image-remove-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.9);
+  border: none;
+  color: #fff;
+  font-size: 10px;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
-.video-resource-name-input {
-  flex: 1;
-  padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(99, 102, 241, 0.5);
-  border-radius: 6px;
-  color: #fff;
-  font-size: 13px;
-  outline: none;
+.ref-image-preview:hover .ref-image-remove-btn {
+  opacity: 1;
 }
 
-.video-resource-name-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-}
-
-.video-resource-name-actions {
-  display: flex;
-  gap: 4px;
-}
-
-.name-action-btn {
-  padding: 4px 8px;
-  border: none;
+.ref-image-upload-btn {
+  padding: 4px 12px;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(99, 102, 241, 0.3);
   border-radius: 4px;
+  color: #a5b4fc;
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
-.name-action-btn.save {
-  background: rgba(34, 197, 94, 0.2);
-  color: #4ade80;
-}
-
-.name-action-btn.save:hover:not(:disabled) {
-  background: rgba(34, 197, 94, 0.3);
-}
-
-.name-action-btn.cancel {
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
-}
-
-.name-action-btn.cancel:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.3);
-}
-
-.name-action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.ref-image-upload-btn:hover {
+  background: rgba(99, 102, 241, 0.25);
+  border-color: rgba(99, 102, 241, 0.5);
 }
 
 /* 类型标签 */
@@ -1920,21 +1936,6 @@
 .video-resource-status-tag.status-processing {
   background: rgba(59, 130, 246, 0.15);
   color: #60a5fa;
-}
-
-.video-resource-status-tag.status-video_generating {
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
-}
-
-.video-resource-status-tag.status-video_generated {
-  background: rgba(34, 197, 94, 0.15);
-  color: #4ade80;
-}
-
-.video-resource-status-tag.status-character_generating {
-  background: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
 }
 
 .video-resource-status-tag.status-completed {

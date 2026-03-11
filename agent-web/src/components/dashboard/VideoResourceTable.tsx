@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   VideoResourceInfo,
   ResourceType,
@@ -10,7 +10,7 @@ import {
   createVideo,
   getTaskStatus as getVideoTaskStatus,
 } from '@/api/videoGeneration';
-import { showWarning, showSuccess } from '@/utils/request';
+import { showWarning, showSuccess, upload } from '@/utils/request';
 import { IMAGE_STYLES } from '@/constants/enums';
 
 // 资源类型标签
@@ -31,9 +31,6 @@ const RESOURCE_STATUS_LABELS: Record<ResourceStatus, string> = {
   completed: '已完成',
   failed: '失败',
 };
-
-// 角色生成超时时间（5分钟）
-const CHARACTER_GENERATION_TIMEOUT_MS = 5 * 60 * 1000;
 
 interface VideoResourceTableProps {
   resources: VideoResourceInfo[];
@@ -78,6 +75,11 @@ const VideoResourceTable: React.FC<VideoResourceTableProps> = ({
 
   // 尺寸选择状态
   const [aspectRatioInput, setAspectRatioInput] = useState<Record<number, string>>({});
+
+  // 参考图上传状态
+  const [uploadingRefImageId, setUploadingRefImageId] = useState<number | null>(null);
+  const refImageInputRef = useRef<HTMLInputElement>(null);
+  const [currentUploadResourceId, setCurrentUploadResourceId] = useState<number | null>(null);
 
   // 获取资源的默认尺寸：角色默认竖版(9:16)，其他默认横版(16:9)
   const getDefaultAspectRatio = (resourceType: ResourceType): string => {
@@ -134,17 +136,18 @@ const VideoResourceTable: React.FC<VideoResourceTableProps> = ({
         duration: 10,
         scriptId: resource.scriptId ?? undefined,
         projectId: resource.workflowProjectId ?? undefined,
+        imageUrls: resource.referenceImageUrl ? [resource.referenceImageUrl] : undefined,
       });
 
       if (result.code !== 200) {
         throw new Error(result.msg || '创建任务失败');
       }
 
-      const taskId = result.data.id;  // 数据库ID，用于轮询查询状态
-      const videoTaskId = result.data.taskId;  // 外部taskId（sora的taskId），用于角色生成
+      const taskId = result.data.id;
+      const videoTaskId = result.data.taskId;
       showSuccess('视频生成任务已创建，正在生成中...');
 
-      // 更新数据库，保存外部taskId（角色生成需要用这个ID）
+      // 更新数据库，保存 videoTaskId
       await updateVideoResource(resource.id, {
         videoTaskId: videoTaskId,
         status: 'video_generating',
@@ -245,7 +248,7 @@ const VideoResourceTable: React.FC<VideoResourceTableProps> = ({
 
     // 获取开始和结束时间
     const startTime = startTimeInput[resource.id] ?? (resource.startTime?.toString() || '0');
-    const endTime = endTimeInput[resource.id] ?? (resource.endTime?.toString() || '3');
+    const endTime = endTimeInput[resource.id] ?? (resource.endTime?.toString() || '5');
 
     // 验证时间格式
     const startNum = parseFloat(startTime);
@@ -268,10 +271,10 @@ const VideoResourceTable: React.FC<VideoResourceTableProps> = ({
         resources.map(r => r.id === resource.id ? { ...r, status: 'character_generating' as ResourceStatus } : r)
       );
 
-      // 调用角色生成 API - 优先使用 videoTaskId，为空时才用 videoUrl
+      // 调用角色生成 API
       const result = await generateCharacter({
         resourceId: resource.id,
-        videoUrl: resource.videoTaskId ? undefined : (resource.videoUrl ?? undefined),
+        videoUrl: resource.videoUrl ?? undefined,
         videoTaskId: resource.videoTaskId ?? undefined,
         timestamps: timestamps,
       });
@@ -370,6 +373,67 @@ const VideoResourceTable: React.FC<VideoResourceTableProps> = ({
     }
   };
 
+  // 触发参考图上传
+  const handleTriggerRefImageUpload = (resourceId: number) => {
+    setCurrentUploadResourceId(resourceId);
+    refImageInputRef.current?.click();
+  };
+
+  // 处理参考图上传
+  const handleRefImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentUploadResourceId) return;
+
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      showWarning('请上传图片文件 (jpg, png, webp)');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      showWarning('图片大小不能超过 10MB');
+      return;
+    }
+
+    setUploadingRefImageId(currentUploadResourceId);
+    try {
+      const response = await upload<{ code: number; data: { url: string } }>('/api/file/upload', file);
+      if (response.data.code === 200 && response.data.data?.url) {
+        const imageUrl = response.data.data.url;
+        await updateVideoResource(currentUploadResourceId, { referenceImageUrl: imageUrl });
+        onResourcesChange(
+          resources.map(r => r.id === currentUploadResourceId ? { ...r, referenceImageUrl: imageUrl } : r)
+        );
+        showSuccess('参考图上传成功');
+      } else {
+        throw new Error('上传失败');
+      }
+    } catch (err) {
+      console.error('参考图上传失败:', err);
+      showWarning('参考图上传失败');
+    } finally {
+      setUploadingRefImageId(null);
+      setCurrentUploadResourceId(null);
+      if (refImageInputRef.current) {
+        refImageInputRef.current.value = '';
+      }
+    }
+  };
+
+  // 删除参考图
+  const handleRemoveRefImage = async (resourceId: number) => {
+    try {
+      await updateVideoResource(resourceId, { referenceImageUrl: '' });
+      onResourcesChange(
+        resources.map(r => r.id === resourceId ? { ...r, referenceImageUrl: null } : r)
+      );
+      showSuccess('参考图已删除');
+    } catch (err) {
+      console.error('删除参考图失败:', err);
+      showWarning('删除参考图失败');
+    }
+  };
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('zh-CN', {
@@ -379,22 +443,11 @@ const VideoResourceTable: React.FC<VideoResourceTableProps> = ({
     });
   };
 
-  // 判断角色生成是否超时（超过5分钟）
-  const isCharacterGenerationTimeout = (resource: VideoResourceInfo): boolean => {
-    if (resource.status !== 'character_generating' || !resource.characterRequestedAt) {
-      return false;
-    }
-    const requestedTime = new Date(resource.characterRequestedAt).getTime();
-    const now = Date.now();
-    return (now - requestedTime) > CHARACTER_GENERATION_TIMEOUT_MS;
-  };
-
-  // 判断是否可以生成角色（视频已生成状态才能生成角色，或者角色生成超时可以重新提交）
+  // 判断是否可以生成角色（视频已生成状态才能生成角色）
   const canGenerateCharacter = (resource: VideoResourceInfo) => {
-    const hasVideo = resource.videoUrl || resource.videoTaskId;
-    const isNotGenerating = resource.status !== 'video_generating' && resource.status !== 'character_generating';
-    const isTimeout = isCharacterGenerationTimeout(resource);
-    return hasVideo && (isNotGenerating || isTimeout);
+    return (resource.videoUrl || resource.videoTaskId) &&
+           resource.status !== 'video_generating' &&
+           resource.status !== 'character_generating';
   };
 
   return (
@@ -448,6 +501,7 @@ const VideoResourceTable: React.FC<VideoResourceTableProps> = ({
                 <th>类型</th>
                 <th>状态</th>
                 <th>提示词</th>
+                {!readOnly && <th>参考图</th>}
                 {!readOnly && <th>尺寸</th>}
                 {!readOnly && <th>开始(秒)</th>}
                 {!readOnly && <th>结束(秒)</th>}
@@ -591,6 +645,31 @@ const VideoResourceTable: React.FC<VideoResourceTableProps> = ({
                     )}
                   </td>
                   {!readOnly && (
+                    <td className="video-resource-ref-image-cell">
+                      {uploadingRefImageId === resource.id ? (
+                        <span className="ref-image-uploading">上传中...</span>
+                      ) : resource.referenceImageUrl ? (
+                        <div className="ref-image-preview">
+                          <img src={resource.referenceImageUrl} alt="参考图" />
+                          <button
+                            className="ref-image-remove-btn"
+                            onClick={() => handleRemoveRefImage(resource.id)}
+                            title="删除参考图"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="ref-image-upload-btn"
+                          onClick={() => handleTriggerRefImageUpload(resource.id)}
+                        >
+                          上传
+                        </button>
+                      )}
+                    </td>
+                  )}
+                  {!readOnly && (
                     <td className="video-resource-aspect-cell">
                       <select
                         className="video-resource-aspect-select"
@@ -674,18 +753,16 @@ const VideoResourceTable: React.FC<VideoResourceTableProps> = ({
                         {/* 角色创作按钮 */}
                         {canGenerateCharacter(resource) && (
                           <button
-                            className={`video-resource-action-btn character-generate ${isCharacterGenerationTimeout(resource) ? 'timeout' : ''}`}
+                            className="video-resource-action-btn character-generate"
                             onClick={() => handleGenerateCharacter(resource)}
                             disabled={generatingCharacterId === resource.id}
-                            title={isCharacterGenerationTimeout(resource) ? '角色生成超时，点击重新提交' : '从视频生成角色'}
+                            title="从视频生成角色"
                           >
                             {generatingCharacterId === resource.id ? (
                               <>
                                 <span className="btn-spinner"></span>
                                 生成中
                               </>
-                            ) : isCharacterGenerationTimeout(resource) ? (
-                              '重新提交'
                             ) : resource.characterId ? (
                               '重新生成'
                             ) : (
@@ -713,6 +790,15 @@ const VideoResourceTable: React.FC<VideoResourceTableProps> = ({
           </table>
         </div>
       )}
+
+      {/* 隐藏的参考图上传 input */}
+      <input
+        type="file"
+        ref={refImageInputRef}
+        style={{ display: 'none' }}
+        accept="image/jpeg,image/jpg,image/png,image/webp"
+        onChange={handleRefImageUpload}
+      />
     </>
   );
 };

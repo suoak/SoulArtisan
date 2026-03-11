@@ -13,6 +13,10 @@ const Footer: React.FC = () => {
   const footerText = config?.footerText;
   // 获取版权信息
   const copyright = config?.copyright || `© ${new Date().getFullYear()} ${displayName}. 保留所有权利。`;
+  // 获取联系信息
+  const contactAddress = config?.contactAddress || '郑州市二七区';
+  const contactPhone = config?.contactPhone || '+86 13333333333';
+  const contactEmail = config?.contactEmail || 'matuto@qq.com';
 
   return (
     <footer className="footer">
@@ -44,15 +48,15 @@ const Footer: React.FC = () => {
           <div className="contact-info">
             <div className="contact-item">
               <span className="contact-icon">📍</span>
-              <span>郑州市二七区</span>
+              <span>{contactAddress}</span>
             </div>
             <div className="contact-item">
               <span className="contact-icon">📞</span>
-              <span>+86 18137829289</span>
+              <span>{contactPhone}</span>
             </div>
             <div className="contact-item">
               <span className="contact-icon">✉️</span>
-              <span>matuto@qq.com</span>
+              <span>{contactEmail}</span>
             </div>
           </div>
         </div>

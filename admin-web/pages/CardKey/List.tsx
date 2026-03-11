@@ -236,7 +236,7 @@ const CardKeyList: React.FC = () => {
       )
     },
     {
-      title: '积分值',
+      title: '算力值',
       dataIndex: 'points',
       key: 'points',
       width: 100,
@@ -332,7 +332,7 @@ const CardKeyList: React.FC = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-800">卡密管理</h1>
-        <p className="text-gray-500 text-sm mt-1">管理站点卡密，用于用户兑换积分</p>
+        <p className="text-gray-500 text-sm mt-1">管理站点卡密，用于用户兑换算力</p>
       </div>
 
       <div className="bg-white p-4 rounded-lg shadow-sm">
@@ -428,13 +428,13 @@ const CardKeyList: React.FC = () => {
           </Form.Item>
           <Form.Item
             name="points"
-            label="积分值"
+            label="算力值"
             rules={[
-              { required: true, message: '请输入积分值' },
-              { type: 'number', min: 1, message: '积分值必须大于0' }
+              { required: true, message: '请输入算力值' },
+              { type: 'number', min: 1, message: '算力值必须大于0' }
             ]}
           >
-            <InputNumber min={1} style={{ width: '100%' }} placeholder="每张卡密的积分值" />
+            <InputNumber min={1} style={{ width: '100%' }} placeholder="每张卡密的算力值" />
           </Form.Item>
           <Form.Item name="batchNo" label="批次号">
             <Input placeholder="留空则自动生成" />
@@ -477,7 +477,7 @@ const CardKeyList: React.FC = () => {
         width={600}
       >
         <div className="mb-4">
-          <p className="text-gray-600">成功生成 {generatedCardKeys.length} 个卡密，每张积分值为 {generatedCardKeys[0]?.points || 0}</p>
+          <p className="text-gray-600">成功生成 {generatedCardKeys.length} 个卡密，每张算力值为 {generatedCardKeys[0]?.points || 0}</p>
         </div>
         <div className="max-h-96 overflow-y-auto bg-gray-50 p-4 rounded">
           {generatedCardKeys.map((card) => (

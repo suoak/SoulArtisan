@@ -169,6 +169,32 @@
   height: 16px;
 }
 
+/* 设置按钮 */
+.wf-settings-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.wf-settings-btn:hover {
+  background: rgba(167, 139, 250, 0.1);
+  border-color: rgba(167, 139, 250, 0.3);
+  color: #fff;
+}
+
+.wf-settings-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* 视频按钮 */
 .wf-video-btn {
   display: flex;

@@ -2,7 +2,7 @@ import request from './request';
 import { PageResult } from '../types';
 
 /**
- * 积分记录信息
+ * 算力记录信息
  */
 export interface PointsRecord {
   id: number;
@@ -22,7 +22,7 @@ export interface PointsRecord {
 }
 
 /**
- * 积分配置信息
+ * 算力配置信息
  */
 export interface PointsConfig {
   id: number;
@@ -37,7 +37,7 @@ export interface PointsConfig {
 }
 
 /**
- * 积分记录查询请求
+ * 算力记录查询请求
  */
 export interface PointsRecordQueryRequest {
   userId?: number;
@@ -47,7 +47,7 @@ export interface PointsRecordQueryRequest {
 }
 
 /**
- * 积分调整请求
+ * 算力调整请求
  */
 export interface PointsAdjustRequest {
   userId: number;
@@ -57,7 +57,7 @@ export interface PointsAdjustRequest {
 }
 
 /**
- * 获取积分记录列表
+ * 获取算力记录列表
  */
 export const getPointsRecordList = async (
   pageNum: number = 1,
@@ -70,14 +70,14 @@ export const getPointsRecordList = async (
 };
 
 /**
- * 调整用户积分
+ * 调整用户算力
  */
 export const adjustPoints = async (data: PointsAdjustRequest): Promise<void> => {
   return request.post('/api/admin/points/adjust', data);
 };
 
 /**
- * 积分来源映射
+ * 算力来源映射
  */
 export const sourceLabels: Record<string, string> = {
   card_key: '卡密兑换',
@@ -87,7 +87,7 @@ export const sourceLabels: Record<string, string> = {
 };
 
 /**
- * 积分类型映射
+ * 算力类型映射
  */
 export const typeLabels: Record<number, string> = {
   1: '收入',
@@ -95,7 +95,7 @@ export const typeLabels: Record<number, string> = {
 };
 
 /**
- * 积分配置键映射
+ * 算力配置键映射
  */
 export const configKeyLabels: Record<string, string> = {
   image_generation: '生成图片',
@@ -106,21 +106,21 @@ export const configKeyLabels: Record<string, string> = {
 };
 
 /**
- * 获取积分配置列表
+ * 获取算力配置列表
  */
 export const getPointsConfigList = async (): Promise<PointsConfig[]> => {
   return request.get('/api/admin/points/config/list');
 };
 
 /**
- * 更新积分配置
+ * 更新算力配置
  */
 export const updatePointsConfigs = async (configs: PointsConfig[]): Promise<void> => {
   return request.put('/api/admin/points/config/update', configs);
 };
 
 /**
- * 初始化积分配置
+ * 初始化算力配置
  */
 export const initPointsConfigs = async (): Promise<PointsConfig[]> => {
   return request.post('/api/admin/points/config/init');

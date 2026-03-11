@@ -37,7 +37,7 @@ interface CharacterGenerationNodeProps {
 
 const CharacterGenerationNode: React.FC<CharacterGenerationNodeProps> = ({ data, id }) => {
   const { getNodes, setNodes, setEdges, getEdges } = useReactFlow();
-  const { getEnumsCache, currentProjectId, currentScriptId, currentProjectStyle } = useWorkflowStore();
+  const { getEnumsCache, currentProjectId, currentScriptId, currentProjectStyle, getVideoChannel, getVideoModel } = useWorkflowStore();
   const [prompt, setPrompt] = useState(data.prompt || '');
   const [style, setStyle] = useState<string>(data.style || currentProjectStyle || '');
   const [duration, setDuration] = useState(data.duration || 10);
@@ -193,6 +193,12 @@ const CharacterGenerationNode: React.FC<CharacterGenerationNodeProps> = ({ data,
       return;
     }
 
+    // 渠道校验
+    if (!getVideoChannel() || !getVideoModel()) {
+      showWarning('请先在渠道设置中选择视频生成渠道');
+      return;
+    }
+
     if (!currentProjectId) {
       showWarning('未找到项目ID');
       return;
@@ -251,6 +257,8 @@ const CharacterGenerationNode: React.FC<CharacterGenerationNodeProps> = ({ data,
         imageUrls: finalImageUrl ? [finalImageUrl] : undefined,
         projectId: currentProjectId,
         scriptId: currentScriptId || undefined,
+        channel: getVideoChannel() || undefined,
+        model: getVideoModel() || undefined,
       };
 
       console.log('调用视频生成接口...', params);

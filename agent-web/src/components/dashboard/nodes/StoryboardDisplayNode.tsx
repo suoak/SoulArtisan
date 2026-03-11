@@ -37,6 +37,8 @@ const StoryboardDisplayNode = ({ data, id }: NodeProps<StoryboardDisplayNodeData
   const { setNodes, getNodes, setEdges, getEdges } = useReactFlow();
   const currentProjectId = useWorkflowStore((state) => state.currentProjectId);
   const currentScriptId = useWorkflowStore((state) => state.currentScriptId);
+  const getVideoChannel = useWorkflowStore((state) => state.getVideoChannel);
+  const getVideoModel = useWorkflowStore((state) => state.getVideoModel);
 
   // 下载图片
   const handleDownload = (e: React.MouseEvent) => {
@@ -199,6 +201,12 @@ const StoryboardDisplayNode = ({ data, id }: NodeProps<StoryboardDisplayNodeData
       return;
     }
 
+    // 渠道校验
+    if (!getVideoChannel() || !getVideoModel()) {
+      showWarning('请先在渠道设置中选择视频生成渠道');
+      return;
+    }
+
     // 直接使用从分镜图生成节点传递过来的提示词
     const videoPrompt = data.prompt || '';
     if (!videoPrompt.trim()) {
@@ -231,6 +239,8 @@ const StoryboardDisplayNode = ({ data, id }: NodeProps<StoryboardDisplayNodeData
         duration: 15,
         projectId: currentProjectId || undefined,
         scriptId: currentScriptId || undefined,
+        channel: getVideoChannel() || undefined,
+        model: getVideoModel() || undefined,
       };
 
       const result = await createVideo(params);

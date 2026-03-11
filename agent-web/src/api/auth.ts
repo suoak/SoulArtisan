@@ -42,10 +42,6 @@ export interface RegisterResponse {
   user: UserInfo;
 }
 
-export interface SystemConfig {
-  enableRegister: boolean;
-}
-
 export interface ApiResponse<T = Record<string, unknown>> {
   code: number;
   msg: string;
@@ -62,13 +58,7 @@ export const register = async (params: RegisterParams): Promise<ApiResponse<Regi
   return response.data;
 };
 
-export const getSystemConfig = async (): Promise<ApiResponse<SystemConfig>> => {
-  const response = await get<ApiResponse<SystemConfig>>('/api/auth/system-config');
-  return response.data;
-};
-
 export default {
   login,
   register,
-  getSystemConfig,
 };

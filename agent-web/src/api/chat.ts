@@ -253,12 +253,13 @@ export const parseCharacterList = async (
  * @returns 角色列表，包含角色名和提示词
  */
 export const parseRoleList = async (
-  content: string
+  content: string,
+  model?: string
 ): Promise<ApiResponse<CharacterListItem[]>> => {
   try {
     const response = await post<ApiResponse<{ data: PlaybookAnalysisItem[] }>>(
       '/api/playbook-analysis/role',
-      { content }
+      { content, model }
     );
 
     if (response.data.code !== 200 || !response.data.data?.data) {
@@ -295,12 +296,13 @@ export const parseRoleList = async (
  * @returns 场景列表，包含场景名和提示词
  */
 export const parseSceneList = async (
-  content: string
+  content: string,
+  model?: string
 ): Promise<ApiResponse<CharacterListItem[]>> => {
   try {
     const response = await post<ApiResponse<{ data: PlaybookAnalysisItem[] }>>(
       '/api/playbook-analysis/scene',
-      { content }
+      { content, model }
     );
 
     if (response.data.code !== 200 || !response.data.data?.data) {
@@ -337,12 +339,13 @@ export const parseSceneList = async (
  * @returns 角色列表，包含角色名和图片提示词
  */
 export const parseRoleImagePrompt = async (
-  content: string
+  content: string,
+  model?: string
 ): Promise<ApiResponse<CharacterListItem[]>> => {
   try {
     const response = await post<ApiResponse<{ data: PlaybookAnalysisItem[] }>>(
       '/api/playbook-analysis/roleImagePrompt',
-      { content }
+      { content, model }
     );
 
     if (response.data.code !== 200 || !response.data.data?.data) {
@@ -379,12 +382,13 @@ export const parseRoleImagePrompt = async (
  * @returns 场景列表，包含场景名和图片提示词
  */
 export const parseSceneImagePrompt = async (
-  content: string
+  content: string,
+  model?: string
 ): Promise<ApiResponse<CharacterListItem[]>> => {
   try {
     const response = await post<ApiResponse<{ data: PlaybookAnalysisItem[] }>>(
       '/api/playbook-analysis/sceneImagePrompt',
-      { content }
+      { content, model }
     );
 
     if (response.data.code !== 200 || !response.data.data?.data) {
@@ -421,12 +425,13 @@ export const parseSceneImagePrompt = async (
  * @returns 资源列表，包含类型、名称和提示词
  */
 export const parsePlaybookAsset = async (
-  content: string
+  content: string,
+  model?: string
 ): Promise<ApiResponse<PlaybookAssetItem[]>> => {
   try {
     const response = await post<ApiResponse<{ data: PlaybookAssetItem[] }>>(
       '/api/playbook-analysis/asset',
-      { content }
+      { content, model }
     );
 
     if (response.data.code !== 200 || !response.data.data?.data) {

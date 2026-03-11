@@ -16,7 +16,7 @@ export default defineConfig({
     port: 5173,
     strictPort: true, // 如果端口被占用则报错
     cors: true, // 启用 CORS
-    allowedHosts: ['www.matuto.com', 'localhost', '127.0.0.1'], // 允许的主机名
+    allowedHosts: ['localhost', '127.0.0.1'], // 允许的主机名
     proxy: {
       '/api': {
         target: 'http://localhost:8080',

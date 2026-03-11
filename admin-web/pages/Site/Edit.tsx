@@ -28,6 +28,8 @@ const EditSite: React.FC = () => {
         logo: site.logo,
         description: site.description,
         sort: site.sort,
+        maxUsers: site.maxUsers,
+        maxStorage: site.maxStorage,
       });
     } catch (error) {
       // 错误已在 request 拦截器中处理
@@ -117,6 +119,24 @@ const EditSite: React.FC = () => {
           >
             <InputNumber min={0} style={{ width: '100%' }} />
           </Form.Item>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Form.Item
+              label="最大用户数"
+              name="maxUsers"
+              extra="0表示不限制"
+            >
+              <InputNumber min={0} style={{ width: '100%' }} placeholder="0表示不限制" />
+            </Form.Item>
+
+            <Form.Item
+              label="最大存储空间 (MB)"
+              name="maxStorage"
+              extra="0表示不限制"
+            >
+              <InputNumber min={0} style={{ width: '100%' }} placeholder="0表示不限制" />
+            </Form.Item>
+          </div>
 
           <div className="flex justify-end gap-4 pt-6 border-t mt-6">
             <Button onClick={() => navigate('/sites')}>

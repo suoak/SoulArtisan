@@ -1,34 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { getSystemConfig } from '../../api/auth';
+import { useSiteConfig } from '../../contexts/SiteConfigContext';
 import './Login.css';
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [enableRegister, setEnableRegister] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
+  const { config: siteConfig } = useSiteConfig();
+
+  const enableRegister = siteConfig?.enableRegister ?? true;
 
   const from = location.state?.from?.pathname || '/dashboard';
-
-  useEffect(() => {
-    const fetchSystemConfig = async () => {
-      try {
-        const response = await getSystemConfig();
-        if (response.code === 0 && response.data) {
-          setEnableRegister(response.data.enableRegister);
-        }
-      } catch (err) {
-        console.error('Failed to fetch system config:', err);
-      }
-    };
-
-    fetchSystemConfig();
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

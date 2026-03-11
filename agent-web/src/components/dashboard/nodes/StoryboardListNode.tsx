@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Handle, Position, useReactFlow } from 'reactflow';
 import { useWorkflowStore } from '../hooks/useWorkflowStore';
 import { showSuccess, showWarning, showError } from '../../../utils/request';
-import { getCameraPrompt } from '../../../api/playbook';
 import './StoryboardListNode.css';
 
 interface ShotItem {
@@ -42,7 +41,6 @@ const StoryboardListNode: React.FC<StoryboardListNodeProps> = ({ data, id }) => 
   // 生成参数
   const [style, setStyle] = useState('');
   const [aspectRatio, setAspectRatio] = useState('16:9');
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   // 枚举数据
   const [enums, setEnums] = useState<{
@@ -175,14 +173,12 @@ const StoryboardListNode: React.FC<StoryboardListNodeProps> = ({ data, id }) => 
     return parts.join('，');
   };
 
-  // 生成分镜图提示词
+  // 生成分镜图节点
   const handleGenerateImagePrompt = async () => {
     if (selectedShots.size === 0) {
       showWarning('请至少选择一个分镜');
       return;
     }
-
-    setIsGeneratingImage(true);
 
     try {
       const nodes = getNodes();
@@ -204,21 +200,11 @@ const StoryboardListNode: React.FC<StoryboardListNodeProps> = ({ data, id }) => 
 
       const scriptScript = promptParts.join('\n');
 
-      // 调用 gemini 接口获取分镜图提示词
-      const result = await getCameraPrompt(scriptScript);
-
-      if (result.code !== 200) {
-        showError(`获取提示词失败: ${result.msg}`);
-        return;
-      }
-
-      const imagePrompt = result.data;
-
       // 获取选中分镜的编号列表
       const selectedShotNumbers = sortedSelectedIndices.map(idx => shots[idx].shot_number);
       const shotNumbersStr = selectedShotNumbers.map(n => `#${n}`).join(', ');
 
-      // 创建分镜图生成节点，保存分镜脚本文案和 gemini 返回的提示词
+      // 创建分镜图生成节点，将获取提示词的任务交给节点内部处理
       const imageNodeId = `storyboard-image-${Date.now()}`;
       const imageNode = {
         id: imageNodeId,
@@ -229,9 +215,8 @@ const StoryboardListNode: React.FC<StoryboardListNodeProps> = ({ data, id }) => 
         },
         data: {
           label: `分镜图生成 (${shotNumbersStr})`,
-          shotNumbers: selectedShotNumbers, // 分镜编号数组
-          scriptScript: scriptScript, // 分镜脚本文案（选中的分镜项文本）
-          prompt: imagePrompt, // gemini 获取的提示词
+          shotNumbers: selectedShotNumbers,
+          scriptScript: scriptScript,
           style: style,
           size: aspectRatio,
         },
@@ -246,12 +231,10 @@ const StoryboardListNode: React.FC<StoryboardListNodeProps> = ({ data, id }) => 
 
       setNodes([...nodes, imageNode]);
       setEdges([...edges, edge]);
-      showSuccess('已生成分镜图提示词');
+      showSuccess('已创建分镜图节点');
     } catch (error: any) {
-      showError(`生成失败: ${error.message || '未知错误'}`);
-      console.error('生成分镜图提示词失败:', error);
-    } finally {
-      setIsGeneratingImage(false);
+      showError(`创建节点失败: ${error.message || '未知错误'}`);
+      console.error('创建分镜图节点失败:', error);
     }
   };
 
@@ -459,7 +442,6 @@ const StoryboardListNode: React.FC<StoryboardListNodeProps> = ({ data, id }) => 
                   className="option-select nodrag"
                   value={style}
                   onChange={(e) => setStyle(e.target.value)}
-                  disabled={isGeneratingImage}
                 >
                   <option value="">无</option>
                   {enums.styles.map((option) => (
@@ -476,7 +458,6 @@ const StoryboardListNode: React.FC<StoryboardListNodeProps> = ({ data, id }) => 
                   className="option-select nodrag"
                   value={aspectRatio}
                   onChange={(e) => setAspectRatio(e.target.value)}
-                  disabled={isGeneratingImage}
                 >
                   {enums.aspectRatios.length > 0 ? (
                     enums.aspectRatios.map((option) => (
@@ -497,9 +478,9 @@ const StoryboardListNode: React.FC<StoryboardListNodeProps> = ({ data, id }) => 
             <button
               className="generate-image-btn"
               onClick={handleGenerateImagePrompt}
-              disabled={isGeneratingImage || selectedShots.size === 0}
+              disabled={selectedShots.size === 0}
             >
-              {isGeneratingImage ? '生成中...' : `🎨 生成分镜图`}
+              🎨 生成分镜图
             </button>
           </div>
         )}

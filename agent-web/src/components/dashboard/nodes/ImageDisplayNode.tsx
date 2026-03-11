@@ -42,6 +42,9 @@ const ImageDisplayNode = ({ data, id }: NodeProps<ImageDisplayNodeData>) => {
   const { setNodes, getNodes, setEdges, getEdges } = useReactFlow();
   const currentProjectId = useWorkflowStore((state) => state.currentProjectId);
   const currentScriptId = useWorkflowStore((state) => state.currentScriptId);
+  const channelSettings = useWorkflowStore((state) => state.channelSettings);
+  const getVideoChannel = useWorkflowStore((state) => state.getVideoChannel);
+  const getVideoModel = useWorkflowStore((state) => state.getVideoModel);
 
   // 同步 data.videoPrompt 到本地状态
   useEffect(() => {
@@ -212,6 +215,12 @@ const ImageDisplayNode = ({ data, id }: NodeProps<ImageDisplayNodeData>) => {
       return;
     }
 
+    // 渠道校验
+    if (!getVideoChannel() || !getVideoModel()) {
+      showWarning('请先在渠道设置中选择视频生成渠道');
+      return;
+    }
+
     if (!videoPrompt.trim()) {
       showWarning('请先输入视频提示词');
       return;
@@ -242,6 +251,8 @@ const ImageDisplayNode = ({ data, id }: NodeProps<ImageDisplayNodeData>) => {
         duration: 15,
         projectId: currentProjectId || undefined,
         scriptId: currentScriptId || undefined,
+        channel: getVideoChannel() || undefined,
+        model: getVideoModel() || undefined,
       };
 
       const result = await createVideo(params);
@@ -315,6 +326,7 @@ const ImageDisplayNode = ({ data, id }: NodeProps<ImageDisplayNodeData>) => {
       const result = await cameraImageToVideoPrompt({
         content: promptSource,
         mediaUrl: data.imageUrl,
+        model: channelSettings.chatModel || undefined,
       });
 
       if (result.code === 200) {

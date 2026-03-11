@@ -11,6 +11,7 @@ import { generateImageFromImage, generateImageFromText } from '../../api/imageGe
 import type { TextToImageParams, ImageToImageParams } from '../../api/imageGeneration';
 import MyImageHistory from '../history/MyImageHistory';
 import { getImageEnums, type ImageEnums } from '../../api/enums';
+import { getCapabilities, type CapabilityInfo } from '../../api/capability';
 import { useAuth } from '../../hooks/useAuth';
 import { upload, showSuccess } from '../../utils/request';
 
@@ -27,6 +28,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = () => {
     const [style, setStyle] = useState<string>(''); // 风格选择
     const [aspectRatio, setAspectRatio] = useState<string>('auto');
     const [imageSize, setImageSize] = useState<string>('1K');
+    const [channel, setChannel] = useState<string>('');
 
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -44,6 +46,9 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = () => {
         styles: []
     });
     const [enumsLoading, setEnumsLoading] = useState(true);
+
+    // 渠道数据
+    const [imageChannels, setImageChannels] = useState<{ channelType: string; channelName: string; price: number }[]>([]);
 
     /**
      * 加载枚举数据
@@ -73,6 +78,36 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = () => {
             }
         };
         loadEnums();
+    }, []);
+
+    /**
+     * 加载渠道数据
+     */
+    useEffect(() => {
+        const loadChannels = async () => {
+            try {
+                const response = await getCapabilities();
+                if (response.code === 200 && response.data) {
+                    // 过滤出图片类型的能力，提取渠道
+                    const channels: { channelType: string; channelName: string; price: number }[] = [];
+                    response.data
+                        .filter((cap: CapabilityInfo) => cap.type === 'image')
+                        .forEach((cap: CapabilityInfo) => {
+                            cap.channels.forEach(ch => {
+                                channels.push({
+                                    channelType: ch.channel_type,
+                                    channelName: ch.channel_name,
+                                    price: ch.price
+                                });
+                            });
+                        });
+                    setImageChannels(channels);
+                }
+            } catch (err) {
+                console.error('加载渠道失败:', err);
+            }
+        };
+        loadChannels();
     }, []);
 
     /**
@@ -118,8 +153,9 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = () => {
                 const imageToImageParams: ImageToImageParams = {
                     prompt: finalPrompt,
                     imageUrls: referenceImages,
-                    aspectRatio: aspectRatio as 'auto' | '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9',
+                    aspectRatio: aspectRatio as '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9',
                     imageSize: imageSize as '1K' | '2K' | '4K',
+                    channel: channel || undefined,
                 };
                 await generateImageFromImage(
                     imageToImageParams,
@@ -132,8 +168,9 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = () => {
                 setStatus('调用文生图接口...');
                 const textToImageParams: TextToImageParams = {
                     prompt: finalPrompt,
-                    aspectRatio: aspectRatio as 'auto' | '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9',
+                    aspectRatio: aspectRatio as '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9',
                     imageSize: imageSize as '1K' | '2K' | '4K',
+                    channel: channel || undefined,
                 };
                 await generateImageFromText(
                     textToImageParams,
@@ -146,7 +183,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = () => {
             setStatus('✅ 任务已提交，请在历史记录中查看进度');
             // 刷新历史记录列表
             triggerHistoryRefresh();
-            // 刷新用户积分
+            // 刷新用户算力
             refreshUserInfo();
 
         } catch (err) {
@@ -474,6 +511,43 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = () => {
                         </select>
                     </div>
                 </div>
+
+                {/* 渠道选择 */}
+                {imageChannels.length > 0 && (
+                    <div style={{ marginBottom: '16px' }}>
+                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', color: '#888', fontSize: '13px' }}>
+                            渠道
+                        </label>
+                        <select
+                            value={channel}
+                            onChange={(e) => setChannel(e.target.value)}
+                            disabled={loading}
+                            style={{
+                                width: '100%',
+                                padding: '10px 12px',
+                                fontSize: '14px',
+                                borderRadius: '6px',
+                                backgroundColor: '#0d0d0d',
+                                color: '#e0e0e0',
+                                border: '1px solid #222',
+                                boxSizing: 'border-box',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            <option value="">默认</option>
+                            {imageChannels.map((ch) => (
+                                <option key={ch.channelType} value={ch.channelType}>
+                                    {ch.channelName} - {ch.price}
+                                </option>
+                            ))}
+                        </select>
+                        {channel && (
+                            <small style={{ color: '#00d4ff', fontSize: '11px', display: 'block', marginTop: '4px' }}>
+                                使用 {imageChannels.find(c => c.channelType === channel)?.channelName} 渠道生成图片
+                            </small>
+                        )}
+                    </div>
+                )}
 
                 {/* 生成按钮 */}
                 <button

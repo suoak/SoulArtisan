@@ -55,7 +55,7 @@ const UserList: React.FC = () => {
   const [pointsTotal, setPointsTotal] = useState(0);
   const [pointsPage, setPointsPage] = useState(1);
 
-  // 调整积分弹窗
+  // 调整算力弹窗
   const [adjustForm] = Form.useForm();
   const [adjustModalVisible, setAdjustModalVisible] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
@@ -93,7 +93,7 @@ const UserList: React.FC = () => {
       setPointsTotal(result.total);
       setPointsPage(page);
     } catch (error) {
-      message.error('加载积分记录失败');
+      message.error('加载算力记录失败');
       console.error(error);
     } finally {
       setPointsLoading(false);
@@ -229,19 +229,19 @@ const UserList: React.FC = () => {
     setAdjusting(true);
     try {
       await adjustPoints({ ...values, userId: selectedUser.id });
-      message.success('积分调整成功');
+      message.success('算力调整成功');
       setAdjustModalVisible(false);
       adjustForm.resetFields();
-      // 刷新积分记录和用户列表
+      // 刷新算力记录和用户列表
       fetchPointsRecords(selectedUser.id, 1);
       fetchUsers();
-      // 更新selectedUser的积分
+      // 更新selectedUser的算力
       const newPoints = values.type === 1
         ? (selectedUser.points || 0) + values.points
         : (selectedUser.points || 0) - values.points;
       setSelectedUser({ ...selectedUser, points: newPoints });
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : '积分调整失败';
+      const errorMessage = error instanceof Error ? error.message : '算力调整失败';
       message.error(errorMessage);
     } finally {
       setAdjusting(false);
@@ -298,7 +298,7 @@ const UserList: React.FC = () => {
       )
     },
     {
-      title: '积分',
+      title: '算力',
       dataIndex: 'points',
       key: 'points',
       width: 100,
@@ -387,7 +387,7 @@ const UserList: React.FC = () => {
         )
     },
     {
-      title: '积分',
+      title: '算力',
       dataIndex: 'points',
       key: 'points',
       width: 80,
@@ -549,7 +549,7 @@ const UserList: React.FC = () => {
 
       {/* 收支详情抽屉 */}
       <Drawer
-        title="积分收支详情"
+        title="算力收支详情"
         placement="right"
         width={700}
         onClose={() => {
@@ -564,7 +564,7 @@ const UserList: React.FC = () => {
             <Descriptions bordered size="small" column={2} className="mb-4">
               <Descriptions.Item label="用户名">{selectedUser.username}</Descriptions.Item>
               <Descriptions.Item label="昵称">{selectedUser.nickname || '-'}</Descriptions.Item>
-              <Descriptions.Item label="当前积分">
+              <Descriptions.Item label="当前算力">
                 <span className="font-semibold text-blue-600 text-lg">{selectedUser.points || 0}</span>
               </Descriptions.Item>
               <Descriptions.Item label="状态">
@@ -575,9 +575,9 @@ const UserList: React.FC = () => {
             </Descriptions>
 
             <div className="flex justify-between items-center mb-2">
-              <span className="text-gray-600 font-medium">积分变动记录</span>
+              <span className="text-gray-600 font-medium">算力变动记录</span>
               <Button type="primary" icon={<Plus size={16} />} onClick={handleOpenAdjustModal}>
-                调整积分
+                调整算力
               </Button>
             </div>
             <Table
@@ -598,16 +598,16 @@ const UserList: React.FC = () => {
         )}
       </Drawer>
 
-      {/* 调整积分弹窗 */}
+      {/* 调整算力弹窗 */}
       <Modal
-        title={`调整积分 - ${selectedUser?.username || ''}`}
+        title={`调整算力 - ${selectedUser?.username || ''}`}
         open={adjustModalVisible}
         onCancel={() => setAdjustModalVisible(false)}
         footer={null}
         width={450}
       >
         <div className="mb-4 p-3 bg-blue-50 rounded">
-          <span className="text-gray-600">当前积分：</span>
+          <span className="text-gray-600">当前算力：</span>
           <span className="font-semibold text-blue-600 text-lg">{selectedUser?.points || 0}</span>
         </div>
         <Form
@@ -623,22 +623,22 @@ const UserList: React.FC = () => {
           >
             <Radio.Group>
               <Radio value={1}>
-                <span className="text-green-600">增加积分</span>
+                <span className="text-green-600">增加算力</span>
               </Radio>
               <Radio value={2}>
-                <span className="text-red-600">扣减积分</span>
+                <span className="text-red-600">扣减算力</span>
               </Radio>
             </Radio.Group>
           </Form.Item>
           <Form.Item
             name="points"
-            label="积分值"
+            label="算力值"
             rules={[
-              { required: true, message: '请输入积分值' },
-              { type: 'number', min: 1, message: '积分值必须大于0' }
+              { required: true, message: '请输入算力值' },
+              { type: 'number', min: 1, message: '算力值必须大于0' }
             ]}
           >
-            <InputNumber min={1} style={{ width: '100%' }} placeholder="请输入积分值" />
+            <InputNumber min={1} style={{ width: '100%' }} placeholder="请输入算力值" />
           </Form.Item>
           <Form.Item name="remark" label="备注">
             <Input.TextArea rows={2} placeholder="可选备注信息" />
@@ -703,10 +703,10 @@ const UserList: React.FC = () => {
           </Form.Item>
           <Form.Item
             name="points"
-            label="初始积分"
-            rules={[{ type: 'number', min: 0, message: '积分不能为负数' }]}
+            label="初始算力"
+            rules={[{ type: 'number', min: 0, message: '算力不能为负数' }]}
           >
-            <InputNumber min={0} style={{ width: '100%' }} placeholder="请输入初始积分" />
+            <InputNumber min={0} style={{ width: '100%' }} placeholder="请输入初始算力" />
           </Form.Item>
           <Form.Item className="mb-0">
             <Space className="w-full justify-end">

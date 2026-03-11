@@ -96,6 +96,7 @@ const WorkflowContent: React.FC<BaseWorkflowProps> = ({ workflowId, backPath = '
 
   // 提取节点的关键数据签名
   const getKeyDataSignature = useCallback((nodes: Node[], edges: Edge[]): string => {
+    // 包含任务状态以支持刷新后恢复轮询
     const keyNodes = nodes.map((node) => ({
       id: node.id,
       type: node.type,
@@ -110,6 +111,17 @@ const WorkflowContent: React.FC<BaseWorkflowProps> = ({ workflowId, backPath = '
         aspectRatio: node.data?.aspectRatio,
         referenceImage: node.data?.referenceImage,
         characterId: node.data?.characterId,
+        // 任务状态相关字段（支持刷新后恢复轮询）
+        taskId: node.data?.taskId,
+        status: node.data?.status,
+        imageStatus: node.data?.imageStatus,
+        videoUrl: node.data?.videoUrl,
+        imageUrl: node.data?.imageUrl,
+        resourceId: node.data?.resourceId,
+        characterTaskId: node.data?.characterTaskId,
+        videoTaskId: node.data?.videoTaskId,
+        errorMessage: node.data?.errorMessage,
+        imageErrorMessage: node.data?.imageErrorMessage,
       },
     }));
 

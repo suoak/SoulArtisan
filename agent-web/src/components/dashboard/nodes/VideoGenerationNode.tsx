@@ -23,7 +23,7 @@ interface VideoGenerationNodeProps {
 
 const VideoGenerationNode: React.FC<VideoGenerationNodeProps> = ({ data, id }) => {
   const { getNodes, setNodes, setEdges, getEdges } = useReactFlow();
-  const { getEnumsCache, currentProjectId, currentScriptId } = useWorkflowStore();
+  const { getEnumsCache, currentProjectId, currentScriptId, getVideoChannel, getVideoModel } = useWorkflowStore();
   const [prompt, setPrompt] = useState(data.prompt || '');
   const [style, setStyle] = useState<string>(''); // 风格选择
   const [duration, setDuration] = useState(data.duration || 10);
@@ -195,6 +195,12 @@ const VideoGenerationNode: React.FC<VideoGenerationNodeProps> = ({ data, id }) =
       return;
     }
 
+    // 渠道校验
+    if (!getVideoChannel() || !getVideoModel()) {
+      showWarning('请先在渠道设置中选择视频生成渠道');
+      return;
+    }
+
     setIsGenerating(true);
 
     try {
@@ -242,7 +248,9 @@ const VideoGenerationNode: React.FC<VideoGenerationNodeProps> = ({ data, id }) =
           aspectRatio: aspectRatio as '16:9' | '9:16',
           duration: duration as 10 | 15 | 25,
           projectId: currentProjectId || undefined,
-          scriptId: currentScriptId || undefined
+          scriptId: currentScriptId || undefined,
+          channel: getVideoChannel() || undefined,
+          model: getVideoModel() || undefined,
         };
 
         // 添加参考图

@@ -13,7 +13,7 @@ const Dashboard: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 积分详情模态框状态
+  // 算力详情模态框状态
   const [showPointsModal, setShowPointsModal] = useState(false);
   const [pointsRecords, setPointsRecords] = useState<PointsRecord[]>([]);
   const [pointsLoading, setPointsLoading] = useState(false);
@@ -78,7 +78,7 @@ const Dashboard: React.FC = () => {
     navigate('/character-projects');
   };
 
-  // 获取积分记录
+  // 获取算力记录
   const fetchPointsRecords = async (page: number = 1) => {
     setPointsLoading(true);
     try {
@@ -88,16 +88,16 @@ const Dashboard: React.FC = () => {
         setPointsTotal(response.data.total || 0);
         setPointsPage(page);
       } else {
-        toast.error(response.msg || '获取积分记录失败');
+        toast.error(response.msg || '获取算力记录失败');
       }
     } catch {
-      toast.error('获取积分记录失败');
+      toast.error('获取算力记录失败');
     } finally {
       setPointsLoading(false);
     }
   };
 
-  // 打开积分详情模态框
+  // 打开算力详情模态框
   const handleOpenPointsModal = () => {
     setShowPointsModal(true);
     fetchPointsRecords(1);
@@ -114,7 +114,7 @@ const Dashboard: React.FC = () => {
     try {
       const response = await redeemCardKey(cardCode.trim());
       if (response.code === 200) {
-        toast.success(`充值成功！获得 ${response.data.points} 积分`);
+        toast.success(`充值成功！获得 ${response.data.points} 算力`);
         setCardCode('');
         setShowRechargeModal(false);
         // 刷新用户信息
@@ -149,7 +149,7 @@ const Dashboard: React.FC = () => {
     }
   }, [showPointsModal]);
 
-  // 组件加载时刷新用户信息（确保积分是最新的）
+  // 组件加载时刷新用户信息（确保算力是最新的）
   useEffect(() => {
     refreshUserInfo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -169,10 +169,10 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="header-right">
-          {/* 积分显示 */}
+          {/* 算力显示 */}
           <div className="credits-box" onClick={handleOpenPointsModal}>
             <span className="credits-value">{userCredits.toLocaleString()}</span>
-            <span className="credits-unit">积分</span>
+            <span className="credits-unit">算力</span>
             <span className="credits-arrow">›</span>
           </div>
 
@@ -340,17 +340,17 @@ const Dashboard: React.FC = () => {
         </div>
       </main>
 
-      {/* 积分详情模态框 */}
+      {/* 算力详情模态框 */}
       {showPointsModal && (
         <div className="modal-overlay" onClick={() => setShowPointsModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>积分明细</h2>
+              <h2>算力明细</h2>
               <button className="modal-close" onClick={() => setShowPointsModal(false)}>×</button>
             </div>
 
             <div className="points-summary">
-              <span className="summary-label">当前积分</span>
+              <span className="summary-label">当前算力</span>
               <span className="summary-value">{userCredits.toLocaleString()}</span>
             </div>
 
@@ -358,14 +358,14 @@ const Dashboard: React.FC = () => {
               {pointsLoading ? (
                 <div className="loading-state">加载中...</div>
               ) : pointsRecords.length === 0 ? (
-                <div className="empty-state">暂无积分记录</div>
+                <div className="empty-state">暂无算力记录</div>
               ) : (
                 <div className="records-list">
                   {pointsRecords.map((record) => (
                     <div key={record.id} className="record-item">
                       <div className="record-main">
                         <div className="record-left">
-                          <span className="record-source">{record.source || '积分变动'}</span>
+                          <span className="record-source">{record.source || '算力变动'}</span>
                           {record.remark && <span className="record-remark">{record.remark}</span>}
                           <span className="record-time">{formatDate(record.createdAt)}</span>
                         </div>

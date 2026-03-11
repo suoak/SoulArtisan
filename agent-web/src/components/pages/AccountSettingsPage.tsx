@@ -34,7 +34,7 @@ const AccountSettingsPage: React.FC = () => {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
 
-  // 积分相关（只读查看）
+  // 算力相关（只读查看）
   const [pointsRecords, setPointsRecords] = useState<PointsRecord[]>([]);
   const [pointsLoading, setPointsLoading] = useState(false);
   const [pointsPage, setPointsPage] = useState(1);
@@ -53,7 +53,7 @@ const AccountSettingsPage: React.FC = () => {
     }
   }, [userInfo]);
 
-  // 切换到积分标签时加载记录
+  // 切换到算力标签时加载记录
   useEffect(() => {
     if (activeTab === 'points') {
       fetchPointsRecords(1);
@@ -164,7 +164,7 @@ const AccountSettingsPage: React.FC = () => {
     }
   };
 
-  // 获取积分记录
+  // 获取算力记录
   const fetchPointsRecords = async (page: number = 1) => {
     setPointsLoading(true);
     try {
@@ -174,10 +174,10 @@ const AccountSettingsPage: React.FC = () => {
         setPointsTotal(response.data.total || 0);
         setPointsPage(page);
       } else {
-        toast.error(response.msg || '获取积分记录失败');
+        toast.error(response.msg || '获取算力记录失败');
       }
     } catch {
-      toast.error('获取积分记录失败');
+      toast.error('获取算力记录失败');
     } finally {
       setPointsLoading(false);
     }
@@ -246,7 +246,7 @@ const AccountSettingsPage: React.FC = () => {
                   <circle cx="12" cy="12" r="10" />
                   <path d="M12 6v6l4 2" />
                 </svg>
-                积分管理
+                算力管理
               </button>
             </nav>
           </div>
@@ -396,19 +396,19 @@ const AccountSettingsPage: React.FC = () => {
             </section>
           )}
 
-          {/* 积分管理 - 只读查看 */}
+          {/* 算力管理 - 只读查看 */}
           {activeTab === 'points' && (
             <section className="settings-section">
               <div className="section-header">
-                <h2>积分管理</h2>
-                <p>查看积分明细和账户余额</p>
+                <h2>算力管理</h2>
+                <p>查看算力明细和账户余额</p>
               </div>
 
               <div className="section-body">
-                {/* 积分汇总 */}
+                {/* 算力汇总 */}
                 <div className="points-overview">
                   <div className="overview-card">
-                    <div className="overview-label">当前积分</div>
+                    <div className="overview-label">当前算力</div>
                     <div className="overview-value">{userCredits.toLocaleString()}</div>
                   </div>
                   <button className="btn-secondary" onClick={handleGoToRecharge}>
@@ -420,20 +420,20 @@ const AccountSettingsPage: React.FC = () => {
                   点击"前往充值"跳转到首页进行卡密充值
                 </div>
 
-                {/* 积分记录 */}
+                {/* 算力记录 */}
                 <div className="points-history">
                   <h3>消费明细</h3>
                   {pointsLoading ? (
                     <div className="loading-state">加载中...</div>
                   ) : pointsRecords.length === 0 ? (
-                    <div className="empty-state">暂无积分记录</div>
+                    <div className="empty-state">暂无算力记录</div>
                   ) : (
                     <div className="records-list">
                       {pointsRecords.map((record) => (
                         <div key={record.id} className="record-item">
                           <div className="record-main">
                             <div className="record-left">
-                              <span className="record-source">{record.source || '积分变动'}</span>
+                              <span className="record-source">{record.source || '算力变动'}</span>
                               {record.remark && <span className="record-remark">{record.remark}</span>}
                               <span className="record-time">{formatDate(record.createdAt)}</span>
                             </div>

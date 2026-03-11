@@ -35,6 +35,7 @@ import ScriptSelector from './ScriptSelector';
 import UnifiedResourceModal from './UnifiedResourceModal';
 import ResourceSelectionModal from './ResourceSelectionModal';
 import PictureResourceSelectionModal from './PictureResourceSelectionModal';
+import ChannelSettingsModal from './ChannelSettingsModal';
 import { useWorkflowStore } from './hooks/useWorkflowStore';
 import { useHistory } from './hooks/useHistory';
 import { updateProject } from '@/api/workflowProject';
@@ -129,6 +130,9 @@ const WorkflowContent: React.FC = () => {
 
   // 返回确认弹窗
   const [showBackConfirm, setShowBackConfirm] = useState(false);
+
+  // 渠道设置弹窗
+  const [showChannelSettings, setShowChannelSettings] = useState(false);
 
   // ========== 历史记录管理（撤销/重做） ==========
   const {
@@ -256,12 +260,11 @@ const WorkflowContent: React.FC = () => {
 
   // 提取节点的关键数据（用于比较是否需要保存）
   const getKeyDataSignature = useCallback((nodes: Node[], edges: Edge[]): string => {
-    // 提取节点关键数据，排除进度、状态等临时数据
+    // 提取节点关键数据，包含任务状态以支持刷新后恢复轮询
     const keyNodes = nodes.map(node => ({
       id: node.id,
       type: node.type,
       position: node.position,
-      // 只保留关键配置数据，排除临时数据
       data: {
         label: node.data?.label,
         prompt: node.data?.prompt,
@@ -272,7 +275,17 @@ const WorkflowContent: React.FC = () => {
         aspectRatio: node.data?.aspectRatio,
         referenceImage: node.data?.referenceImage,
         characterId: node.data?.characterId,
-        // 排除: progress, status, taskId, outputImage, outputVideo, generatedImages 等临时/结果数据
+        // 任务状态相关字段（支持刷新后恢复轮询）
+        taskId: node.data?.taskId,
+        status: node.data?.status,
+        imageStatus: node.data?.imageStatus,
+        videoUrl: node.data?.videoUrl,
+        imageUrl: node.data?.imageUrl,
+        resourceId: node.data?.resourceId,
+        characterTaskId: node.data?.characterTaskId,
+        videoTaskId: node.data?.videoTaskId,
+        errorMessage: node.data?.errorMessage,
+        imageErrorMessage: node.data?.imageErrorMessage,
       }
     }));
 
@@ -712,6 +725,17 @@ const WorkflowContent: React.FC = () => {
             </span>
           )}
           <button
+            onClick={() => setShowChannelSettings(true)}
+            className="wf-settings-btn"
+            title="渠道设置"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+            设置
+          </button>
+          <button
             onClick={() => setShowResourceModal(true)}
             className="wf-resource-btn"
             title="资源管理"
@@ -902,6 +926,12 @@ const WorkflowContent: React.FC = () => {
       <UnifiedResourceModal
         isOpen={showResourceModal}
         onClose={() => setShowResourceModal(false)}
+      />
+
+      {/* 渠道设置弹窗 */}
+      <ChannelSettingsModal
+        isOpen={showChannelSettings}
+        onClose={() => setShowChannelSettings(false)}
       />
 
       {/* 返回确认弹窗 */}

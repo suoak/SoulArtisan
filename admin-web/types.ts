@@ -40,6 +40,8 @@ export interface Site {
   projectCount?: number;
   status: number; // 0-禁用, 1-启用
   sort: number;
+  maxUsers?: number;
+  maxStorage?: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -73,8 +75,8 @@ export interface DashboardStats {
 export interface SiteConfig {
   siteId: number;
   // API 配置
-  duomiApiKey?: string;
-  duomiApiUrl?: string;
+  prismApiKey?: string;
+  prismApiUrl?: string;
   geminiApiKey?: string;
   geminiApiUrl?: string;
   // 回调地址配置
@@ -86,21 +88,25 @@ export interface SiteConfig {
   cosBucket?: string;
   cosRegion?: string;
   cosCdnDomain?: string;
-  // 系统配置
-  maxUsers?: number;
-  maxStorage?: number;
+  // 功能开关配置
+  enableRegister?: boolean;
   // 站点展示配置
   displayName?: string;
+  logo?: string;
   favicon?: string;
   themeColor?: string;
   footerText?: string;
   copyright?: string;
+  // 联系信息配置
+  contactAddress?: string;
+  contactPhone?: string;
+  contactEmail?: string;
 }
 
 export interface SiteConfigRequest {
   // API 配置
-  duomiApiKey?: string;
-  duomiApiUrl?: string;
+  prismApiKey?: string;
+  prismApiUrl?: string;
   geminiApiKey?: string;
   geminiApiUrl?: string;
   // 回调地址配置
@@ -112,15 +118,19 @@ export interface SiteConfigRequest {
   cosBucket?: string;
   cosRegion?: string;
   cosCdnDomain?: string;
-  // 系统配置
-  maxUsers?: number;
-  maxStorage?: number;
+  // 功能开关配置
+  enableRegister?: boolean;
   // 站点展示配置
   displayName?: string;
+  logo?: string;
   favicon?: string;
   themeColor?: string;
   footerText?: string;
   copyright?: string;
+  // 联系信息配置
+  contactAddress?: string;
+  contactPhone?: string;
+  contactEmail?: string;
 }
 
 export interface PageResult<T> {
@@ -140,6 +150,8 @@ export interface SiteCreateRequest {
   adminPassword: string;
   adminRealName: string;
   sort?: number;
+  maxUsers?: number;
+  maxStorage?: number;
 }
 
 export interface SiteUpdateRequest {
@@ -148,6 +160,8 @@ export interface SiteUpdateRequest {
   logo?: string;
   description?: string;
   sort?: number;
+  maxUsers?: number;
+  maxStorage?: number;
 }
 
 export interface User {

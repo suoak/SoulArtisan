@@ -6,11 +6,11 @@ export default defineConfig({
   server: {
     proxy: {
       '/api/proxy': {
-        target: 'https://duomiapi.com',
+        target: 'https://api.prism.com',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/proxy/, ''),
         headers: {
-          'Authorization': 'PDVks1q5NdSjYxGiKblmv0Za9I'
+          'Authorization': 'Bearer sk-prism-xxx'
         }
       }
     }

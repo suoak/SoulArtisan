@@ -114,6 +114,18 @@
   box-shadow: 0 0 10px rgba(108, 92, 231, 0.5);
 }
 
+.si-upload-replace-btn.uploading {
+  background: rgba(108, 92, 231, 0.6);
+  cursor: wait;
+  pointer-events: none;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
 .si-download-btn {
   background: rgba(46, 204, 113, 0.9);
 }
@@ -174,6 +186,32 @@
 .si-image-empty span {
   color: #666;
   font-size: 12px;
+}
+
+.si-empty-upload-btn {
+  margin-top: 8px;
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #ff9f43, #f7b731);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.si-empty-upload-btn:hover {
+  background: linear-gradient(135deg, #f7b731, #ff9f43);
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(255, 159, 67, 0.4);
+}
+
+.si-empty-upload-btn.uploading {
+  background: linear-gradient(135deg, #ccc, #aaa);
+  cursor: wait;
+  pointer-events: none;
+  animation: pulse 1s infinite;
 }
 
 .si-spinner {
@@ -1163,4 +1201,38 @@
 .si-no-matched-resources .si-hint {
   font-size: 11px;
   color: #555;
+}
+
+/* 分镜规划 textarea 包装器，用于放置重新生成按钮 */
+.si-textarea-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.si-refresh-prompt-btn {
+  align-self: flex-end;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #999;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.si-refresh-prompt-btn:hover:not(:disabled) {
+  background: rgba(255, 159, 67, 0.1);
+  border-color: #ff9f43;
+  color: #ff9f43;
+}
+
+.si-refresh-prompt-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

@@ -17,7 +17,7 @@ interface RoleAnalysisNodeProps {
 
 const RoleAnalysisNode: React.FC<RoleAnalysisNodeProps> = ({ data, id }) => {
   const { getNodes, setNodes, getEdges, setEdges } = useReactFlow();
-  const { currentProjectId, currentScriptId, openResourceSelectionModal } = useWorkflowStore();
+  const { currentProjectId, currentScriptId, openResourceSelectionModal, channelSettings } = useWorkflowStore();
   const [content, setContent] = useState(data.content || '');
   const [isExtracting, setIsExtracting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +69,7 @@ const RoleAnalysisNode: React.FC<RoleAnalysisNodeProps> = ({ data, id }) => {
       console.log('调用角色列表解析接口...', { content: content.substring(0, 50) });
 
       // 调用角色列表解析接口
-      const response = await parseRoleList(content);
+      const response = await parseRoleList(content, channelSettings.chatModel || undefined);
 
       console.log('角色列表解析响应:', response);
 
@@ -175,7 +175,7 @@ const RoleAnalysisNode: React.FC<RoleAnalysisNodeProps> = ({ data, id }) => {
       console.log('调用场景列表解析接口...', { content: content.substring(0, 50) });
 
       // 调用场景列表解析接口
-      const response = await parseSceneList(content);
+      const response = await parseSceneList(content, channelSettings.chatModel || undefined);
 
       console.log('场景列表解析响应:', response);
 
@@ -282,7 +282,7 @@ const RoleAnalysisNode: React.FC<RoleAnalysisNodeProps> = ({ data, id }) => {
       console.log('调用视频资源解析接口...', { content: content.substring(0, 50) });
 
       // 调用视频资源解析接口
-      const result = await analysisAssetVideo(content);
+      const result = await analysisAssetVideo(content, channelSettings.chatModel || undefined);
 
       console.log('视频资源解析响应:', result);
 
@@ -488,7 +488,7 @@ const RoleAnalysisNode: React.FC<RoleAnalysisNodeProps> = ({ data, id }) => {
       console.log('调用场景图片提示词解析接口...', { content: content.substring(0, 50) });
 
       // 调用场景图片提示词解析接口
-      const response = await parseSceneImagePrompt(content);
+      const response = await parseSceneImagePrompt(content, channelSettings.chatModel || undefined);
 
       console.log('场景图片提示词解析响应:', response);
 
@@ -585,7 +585,7 @@ const RoleAnalysisNode: React.FC<RoleAnalysisNodeProps> = ({ data, id }) => {
       console.log('调用剧本资源解析接口...', { content: content.substring(0, 50) });
 
       // 调用剧本资源解析接口
-      const response = await parsePlaybookAsset(content);
+      const response = await parsePlaybookAsset(content, channelSettings.chatModel || undefined);
 
       console.log('剧本资源解析响应:', response);
 

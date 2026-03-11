@@ -177,6 +177,7 @@ const CharacterDisplayNode: React.FC<CharacterDisplayNodeProps> = ({ data, id })
             resourceType: (character.characterType === 'scene' ? 'scene' : 'character'),
             prompt: null,
             aspectRatio: null,
+            referenceImageUrl: null,
             videoTaskId: null,
             videoUrl: null,
             videoResultUrl: null,
@@ -194,7 +195,6 @@ const CharacterDisplayNode: React.FC<CharacterDisplayNodeProps> = ({ data, id })
             createdAt: character.createdAt || new Date().toISOString(),
             updatedAt: character.updatedAt || new Date().toISOString(),
             completedAt: null,
-            characterRequestedAt: null,
           };
           addCharacterToCache(compatibleResource);
 

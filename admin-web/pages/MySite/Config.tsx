@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Form, Input, Button, Card, Spin, Alert, ColorPicker, Tabs, Upload, App } from 'antd';
+import { Form, Input, Button, Card, Spin, Alert, ColorPicker, Tabs, Upload, App, Switch } from 'antd';
 import type { UploadFile } from 'antd';
 import { Save, Cloud, Palette, Globe, Upload as UploadIcon } from 'lucide-react';
 import { getMySiteDetail, getMySiteConfig, updateMySiteConfig, uploadFile } from '../../api/site';
@@ -11,6 +11,7 @@ const MySiteConfig: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [siteInfo, setSiteInfo] = useState<Site | null>(null);
+  const [logoFileList, setLogoFileList] = useState<UploadFile[]>([]);
   const [faviconFileList, setFaviconFileList] = useState<UploadFile[]>([]);
   const [uploading, setUploading] = useState(false);
 
@@ -29,6 +30,19 @@ const MySiteConfig: React.FC = () => {
       // 获取站点配置
       const config = await getMySiteConfig();
       form.setFieldsValue(config);
+
+      // 如果有logo，设置文件列表用于显示
+      if (config.logo) {
+        setLogoFileList([
+          {
+            uid: '-1',
+            name: 'logo',
+            status: 'done',
+            url: config.logo,
+            thumbUrl: config.logo,
+          },
+        ]);
+      }
 
       // 如果有favicon，设置文件列表用于显示
       if (config.favicon) {
@@ -70,6 +84,57 @@ const MySiteConfig: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  // Logo 上传配置
+  const logoUploadProps = {
+    name: 'file',
+    listType: 'picture-card' as const,
+    fileList: logoFileList,
+    maxCount: 1,
+    accept: 'image/*',
+    beforeUpload: () => false,
+    onChange: async ({ fileList }: { fileList: UploadFile[] }) => {
+      if (fileList.length === 0) {
+        setLogoFileList([]);
+        form.setFieldValue('logo', '');
+        return;
+      }
+
+      const file = fileList[fileList.length - 1];
+
+      if (file.status === 'done') {
+        setLogoFileList(fileList);
+        return;
+      }
+
+      if (file.originFileObj) {
+        try {
+          setUploading(true);
+          const result = await uploadFile(file.originFileObj);
+          const uploadedFile = {
+            uid: file.uid,
+            name: file.name,
+            status: 'done' as const,
+            url: result.url,
+            thumbUrl: result.url,
+          };
+          setLogoFileList([uploadedFile]);
+          form.setFieldValue('logo', result.url);
+          message.success('Logo上传成功');
+        } catch (error) {
+          message.error('Logo上传失败');
+          console.error(error);
+          setLogoFileList([]);
+        } finally {
+          setUploading(false);
+        }
+      }
+    },
+    onRemove: () => {
+      setLogoFileList([]);
+      form.setFieldValue('logo', '');
+    },
   };
 
   // Favicon 上传配置
@@ -154,6 +219,26 @@ const MySiteConfig: React.FC = () => {
           </Form.Item>
 
           <Form.Item
+            label="站点 Logo"
+            name="logo"
+            extra="显示在网站左上角的Logo图片"
+          >
+            <Input type="hidden" />
+          </Form.Item>
+          <Form.Item>
+            <Upload {...logoUploadProps}>
+              {logoFileList.length === 0 && (
+                <div className="flex flex-col items-center justify-center">
+                  <UploadIcon size={24} className="text-gray-400" />
+                  <div className="mt-2 text-sm text-gray-500">
+                    {uploading ? '上传中...' : '点击上传'}
+                  </div>
+                </div>
+              )}
+            </Upload>
+          </Form.Item>
+
+          <Form.Item
             label="网站图标 (Favicon)"
             name="favicon"
             extra="浏览器标签页显示的小图标，支持 ico、png、jpg 等格式"
@@ -198,6 +283,39 @@ const MySiteConfig: React.FC = () => {
             extra="显示在页面底部的版权声明"
           >
             <Input placeholder="例如: © 2024 公司名称 版权所有" />
+          </Form.Item>
+
+          <Form.Item
+            label="是否开启注册"
+            name="enableRegister"
+            extra="关闭后用户将无法注册新账号"
+            valuePropName="checked"
+          >
+            <Switch />
+          </Form.Item>
+
+          <Form.Item
+            label="联系地址"
+            name="contactAddress"
+            extra="显示在页面底部联系我们区域"
+          >
+            <Input placeholder="例如: 郑州市二七区" />
+          </Form.Item>
+
+          <Form.Item
+            label="联系电话"
+            name="contactPhone"
+            extra="显示在页面底部联系我们区域"
+          >
+            <Input placeholder="例如: +86 13333333333" />
+          </Form.Item>
+
+          <Form.Item
+            label="联系邮箱"
+            name="contactEmail"
+            extra="显示在页面底部联系我们区域"
+          >
+            <Input placeholder="例如: contact@example.com" />
           </Form.Item>
         </div>
       ),

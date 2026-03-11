@@ -29,7 +29,7 @@ interface ResourcePromptNodeProps {
 
 const ResourcePromptNode: React.FC<ResourcePromptNodeProps> = ({ data, id }) => {
   const { getNodes, setNodes, setEdges, getEdges } = useReactFlow();
-  const { getEnumsCache, currentScriptId, currentProjectId } = useWorkflowStore();
+  const { getEnumsCache, currentScriptId, currentProjectId, getImageChannel, getImageModel } = useWorkflowStore();
   const [prompt, setPrompt] = useState(data.prompt || '');
   const [style, setStyle] = useState(data.style || '');
   const [size, setSize] = useState(data.size || '1:1');
@@ -190,6 +190,12 @@ const ResourcePromptNode: React.FC<ResourcePromptNodeProps> = ({ data, id }) => 
       return;
     }
 
+    // 渠道校验
+    if (!getImageChannel() || !getImageModel()) {
+      showWarning('请先在渠道设置中选择图片生成渠道');
+      return;
+    }
+
     setIsGenerating(true);
 
     try {
@@ -211,8 +217,10 @@ const ResourcePromptNode: React.FC<ResourcePromptNodeProps> = ({ data, id }) => 
       const task = await generateImageFromText(
         {
           prompt: finalPrompt,
-          aspectRatio: size as 'auto' | '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9',
+          aspectRatio: size as '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9',
           imageSize: '1K',
+          channel: getImageChannel() || undefined,
+          model: getImageModel() || undefined,
         },
         (status) => {
           console.log('文生图状态:', status);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   deletePictureResource,
   updatePictureImageUrl,
@@ -16,6 +16,7 @@ import {
 } from '@/api/imageGeneration';
 import { showWarning, showSuccess } from '@/utils/request';
 import { IMAGE_STYLES } from '@/constants/enums';
+import { useWorkflowStore } from './hooks/useWorkflowStore';
 
 interface PictureResourceListProps {
   resources: PictureResource[];
@@ -34,12 +35,27 @@ const PictureResourceList: React.FC<PictureResourceListProps> = ({
   onDelete,
   readOnly = false,
 }) => {
+  // 从 store 获取渠道设置
+  const { channelSettings } = useWorkflowStore();
+
   // 筛选器状态
   const [typeFilter, setTypeFilter] = useState<PictureResourceType | ''>('');
   const [statusFilter, setStatusFilter] = useState<PictureResourceStatus | ''>('');
 
-  // 图片生成状态
-  const [generatingResourceId, setGeneratingResourceId] = useState<number | null>(null);
+  // 图片生成状态 - 支持多个并发生成
+  const [generatingResourceIds, setGeneratingResourceIds] = useState<Set<number>>(new Set());
+
+  // 使用 ref 保存最新的 resources 引用，避免闭包问题
+  // 直接同步更新，不使用 useEffect，确保每次渲染时都是最新值
+  const resourcesRef = useRef(resources);
+  resourcesRef.current = resources;
+
+  // 辅助函数：更新资源并同步更新 ref，避免竞态条件
+  const updateResources = (updater: (resources: PictureResource[]) => PictureResource[]) => {
+    const newResources = updater(resourcesRef.current);
+    resourcesRef.current = newResources; // 立即同步更新 ref
+    onResourcesChange(newResources);
+  };
 
   // 提示词编辑状态
   const [editingPromptId, setEditingPromptId] = useState<number | null>(null);
@@ -69,12 +85,12 @@ const PictureResourceList: React.FC<PictureResourceListProps> = ({
       return;
     }
 
-    setGeneratingResourceId(resource.id);
+    // 添加到生成中的 ID 集合
+    setGeneratingResourceIds(prev => new Set(prev).add(resource.id));
+
     try {
       // 如果有旧图片，先清空并更新状态为生成中
-      onResourcesChange(
-        resources.map(r => r.id === resource.id ? { ...r, imageUrl: '', status: 'generating' as PictureResourceStatus } : r)
-      );
+      updateResources(rs => rs.map(r => r.id === resource.id ? { ...r, imageUrl: '', status: 'generating' as PictureResourceStatus } : r));
 
       // 构建提示词：如果剧本有风格，将风格提示词加在前面
       let finalPrompt = resource.prompt;
@@ -85,11 +101,13 @@ const PictureResourceList: React.FC<PictureResourceListProps> = ({
         }
       }
 
-      // 创建图片生成任务
+      // 创建图片生成任务，传入渠道设置
       const result = await textToImage({
         prompt: finalPrompt,
         aspectRatio: '1:1',
         imageSize: '1K',
+        channel: channelSettings.imageChannel || undefined,
+        model: channelSettings.imageModel || undefined,
       });
 
       if (result.code !== 200) {
@@ -98,11 +116,6 @@ const PictureResourceList: React.FC<PictureResourceListProps> = ({
 
       const taskId = result.data.id;
       showSuccess('图片生成任务已创建，正在生成中...');
-
-      // 更新资源状态为生成中
-      onResourcesChange(
-        resources.map(r => r.id === resource.id ? { ...r, status: 'generating' as PictureResourceStatus } : r)
-      );
 
       // 轮询任务状态
       const pollTask = async () => {
@@ -118,28 +131,37 @@ const PictureResourceList: React.FC<PictureResourceListProps> = ({
             // 更新图片资源的图片地址
             await updatePictureImageUrl(resource.id, task.resultUrl);
             // 更新本地状态
-            onResourcesChange(
-              resources.map(r => r.id === resource.id ? { ...r, imageUrl: task.resultUrl!, status: 'generated' as PictureResourceStatus } : r)
-            );
+            updateResources(rs => rs.map(r => r.id === resource.id ? { ...r, imageUrl: task.resultUrl!, status: 'generated' as PictureResourceStatus } : r));
             showSuccess('图片生成完成');
-            setGeneratingResourceId(null);
+            // 从生成中的 ID 集合移除
+            setGeneratingResourceIds(prev => {
+              const next = new Set(prev);
+              next.delete(resource.id);
+              return next;
+            });
           } else if (task.status === 'failed') {
             // 更新状态为待生成
-            onResourcesChange(
-              resources.map(r => r.id === resource.id ? { ...r, status: 'pending' as PictureResourceStatus } : r)
-            );
+            updateResources(rs => rs.map(r => r.id === resource.id ? { ...r, status: 'pending' as PictureResourceStatus } : r));
             showWarning('图片生成失败: ' + (task.errorMessage || '未知错误'));
-            setGeneratingResourceId(null);
+            // 从生成中的 ID 集合移除
+            setGeneratingResourceIds(prev => {
+              const next = new Set(prev);
+              next.delete(resource.id);
+              return next;
+            });
           } else {
             // 继续轮询
             setTimeout(pollTask, 5000);
           }
         } catch (error) {
           console.error('轮询任务状态失败:', error);
-          onResourcesChange(
-            resources.map(r => r.id === resource.id ? { ...r, status: 'pending' as PictureResourceStatus } : r)
-          );
-          setGeneratingResourceId(null);
+          updateResources(rs => rs.map(r => r.id === resource.id ? { ...r, status: 'pending' as PictureResourceStatus } : r));
+          // 从生成中的 ID 集合移除
+          setGeneratingResourceIds(prev => {
+            const next = new Set(prev);
+            next.delete(resource.id);
+            return next;
+          });
         }
       };
 
@@ -149,7 +171,12 @@ const PictureResourceList: React.FC<PictureResourceListProps> = ({
     } catch (error) {
       console.error('生成图片失败:', error);
       showWarning('生成图片失败');
-      setGeneratingResourceId(null);
+      // 从生成中的 ID 集合移除
+      setGeneratingResourceIds(prev => {
+        const next = new Set(prev);
+        next.delete(resource.id);
+        return next;
+      });
     }
   };
 
@@ -426,9 +453,9 @@ const PictureResourceList: React.FC<PictureResourceListProps> = ({
                         <button
                           className="picture-resource-generate-btn"
                           onClick={() => handleGenerateImage(resource)}
-                          disabled={generatingResourceId === resource.id || resource.status === 'generating'}
+                          disabled={generatingResourceIds.has(resource.id) || resource.status === 'generating'}
                         >
-                          {generatingResourceId === resource.id || resource.status === 'generating' ? (
+                          {generatingResourceIds.has(resource.id) || resource.status === 'generating' ? (
                             <>
                               <span className="btn-spinner"></span>
                               生成中

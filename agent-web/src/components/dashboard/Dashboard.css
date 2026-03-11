@@ -45,7 +45,7 @@
   gap: 16px;
 }
 
-/* 积分显示 */
+/* 算力显示 */
 .credits-box {
   display: flex;
   align-items: center;
@@ -395,7 +395,7 @@
   color: #fff;
 }
 
-/* 积分汇总 */
+/* 算力汇总 */
 .points-summary {
   display: flex;
   justify-content: space-between;
@@ -431,7 +431,7 @@
   font-size: 14px;
 }
 
-/* 积分记录列表 */
+/* 算力记录列表 */
 .records-list {
   display: flex;
   flex-direction: column;

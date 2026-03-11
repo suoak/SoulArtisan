@@ -92,7 +92,7 @@ function App() {
               {/* 站点管理员 - 卡密管理 */}
               <Route path="/cardkeys" element={<CardKeyList />} />
 
-              {/* 站点管理员 - 积分管理 */}
+              {/* 站点管理员 - 算力管理 */}
               <Route path="/points/records" element={<PointsRecordList />} />
               <Route path="/points/config" element={<PointsConfigPage />} />
 

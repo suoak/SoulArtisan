@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Table, Button, Space, Tag, Modal, Pagination, Form, Input, InputNumber, Tabs, Upload, ColorPicker, Spin, Alert, App } from 'antd';
+import { Table, Button, Space, Tag, Modal, Pagination, Form, Input, InputNumber, Tabs, Upload, ColorPicker, Spin, Alert, App, Switch } from 'antd';
 import type { UploadFile } from 'antd';
-import { Edit, Trash2, Plus, Power, Settings, Save, Key, Cloud, Database, Palette, Upload as UploadIcon } from 'lucide-react';
+import { Edit, Trash2, Plus, Power, Settings, Save, Key, Cloud, Palette, Upload as UploadIcon, UserPlus } from 'lucide-react';
 import { getSiteList, updateSiteStatus, deleteSite, getSiteConfig, updateSiteConfig, uploadFile } from '../../api/site';
 import { Site, SiteConfigRequest } from '../../types';
 
@@ -419,6 +419,14 @@ const SiteList: React.FC = () => {
                         >
                           <Input placeholder="例如: © 2024 公司名称 版权所有" />
                         </Form.Item>
+                        <Form.Item
+                          label="是否开启注册"
+                          name="enableRegister"
+                          extra="关闭后用户将无法注册新账号"
+                          valuePropName="checked"
+                        >
+                          <Switch />
+                        </Form.Item>
                       </div>
                     ),
                   },
@@ -433,18 +441,18 @@ const SiteList: React.FC = () => {
                     children: (
                       <div className="py-4 pl-4">
                         <div className="mb-6">
-                          <h4 className="text-sm font-medium text-gray-700 mb-3">多米 API 配置</h4>
+                          <h4 className="text-sm font-medium text-gray-700 mb-3">Prism API 配置</h4>
                           <Form.Item
                             label="API 请求地址"
-                            name="duomiApiUrl"
-                            extra="多米API的请求地址"
+                            name="prismApiUrl"
+                            extra="Prism API的请求地址"
                           >
-                            <Input placeholder="例如: https://duomiapi.com" />
+                            <Input placeholder="例如: https://api.prism.com" />
                           </Form.Item>
                           <Form.Item
                             label="API Key"
-                            name="duomiApiKey"
-                            extra="用于调用多米服务的API密钥"
+                            name="prismApiKey"
+                            extra="用于调用Prism服务的API密钥"
                           >
                             <Input.Password placeholder="输入新的API Key以更新" visibilityToggle />
                           </Form.Item>
@@ -530,33 +538,6 @@ const SiteList: React.FC = () => {
                           extra="COS绑定的CDN加速域名"
                         >
                           <Input placeholder="输入CDN域名" />
-                        </Form.Item>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: 'system',
-                    label: (
-                      <span className="flex items-center gap-2">
-                        <Database size={16} />
-                        系统配置
-                      </span>
-                    ),
-                    children: (
-                      <div className="py-4 pl-4">
-                        <Form.Item
-                          label="最大用户数"
-                          name="maxUsers"
-                          extra="该站点允许的最大用户数，0表示不限制"
-                        >
-                          <InputNumber placeholder="输入最大用户数" min={0} style={{ width: '100%' }} />
-                        </Form.Item>
-                        <Form.Item
-                          label="最大存储空间 (MB)"
-                          name="maxStorage"
-                          extra="该站点允许的最大存储空间，单位MB，0表示不限制"
-                        >
-                          <InputNumber placeholder="输入最大存储空间" min={0} style={{ width: '100%' }} />
                         </Form.Item>
                       </div>
                     ),

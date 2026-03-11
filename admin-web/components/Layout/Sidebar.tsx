@@ -54,13 +54,9 @@ const Sidebar: React.FC = () => {
               <Globe size={20} />
               <span>站点管理</span>
             </NavLink>
-            <NavLink to="/system/config" className={({ isActive }) => isActive ? activeClass : inactiveClass}>
-              <Cog size={20} />
-              <span>系统配置</span>
-            </NavLink>
             <NavLink to="/points/config" className={({ isActive }) => isActive ? activeClass : inactiveClass}>
               <Sliders size={20} />
-              <span>积分配置</span>
+              <span>算力配置</span>
             </NavLink>
             <NavLink to="/chat-prompts" className={({ isActive }) => isActive ? activeClass : inactiveClass}>
               <MessageSquare size={20} />
@@ -84,7 +80,7 @@ const Sidebar: React.FC = () => {
             </NavLink>
             <NavLink to="/points/records" className={({ isActive }) => isActive ? activeClass : inactiveClass}>
               <Coins size={20} />
-              <span>积分记录</span>
+              <span>算力记录</span>
             </NavLink>
           </>
         )}

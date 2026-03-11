@@ -2,16 +2,27 @@ import { create } from 'zustand';
 import { SystemConfig } from '../types';
 import { getPublicSystemConfig } from '../api/system';
 
+// 从环境变量获取项目配置
+const APP_TITLE = import.meta.env.VITE_APP_TITLE;
+const APP_COPYRIGHT = import.meta.env.VITE_APP_COPYRIGHT;
+
+// 环境变量强制覆盖的字段（.env 优先于数据库配置）
+const ENV_OVERRIDES = {
+  systemTitle: APP_TITLE,
+  copyright: APP_COPYRIGHT,
+  loginTitle: APP_TITLE,
+};
+
 // 默认配置
 const DEFAULT_CONFIG: SystemConfig = {
-  systemTitle: '易企漫剧平台',
+  systemTitle: APP_TITLE,
   systemLogo: '',
   systemFavicon: '',
-  copyright: '© 2025 易企漫剧平台',
+  copyright: APP_COPYRIGHT,
   footerText: '',
   icpBeian: '',
   loginBgImage: '',
-  loginTitle: '易企漫剧平台',
+  loginTitle: APP_TITLE,
   loginSubtitle: '登录以继续使用系统',
   primaryColor: '#6366f1',
 };
@@ -32,10 +43,11 @@ export const useSystemConfigStore = create<SystemConfigState>((set, get) => ({
   isLoaded: false,
 
   setConfig: (config) => {
-    set({ config: { ...DEFAULT_CONFIG, ...config } });
+    // 合并配置：默认值 -> API值 -> 环境变量强制覆盖
+    set({ config: { ...DEFAULT_CONFIG, ...config, ...ENV_OVERRIDES } });
     // 更新页面 favicon 和 title
     get().updateFavicon(config.systemFavicon || '');
-    get().updateTitle(config.systemTitle || DEFAULT_CONFIG.systemTitle);
+    get().updateTitle(ENV_OVERRIDES.systemTitle);
   },
 
   loadConfig: async () => {
@@ -45,14 +57,15 @@ export const useSystemConfigStore = create<SystemConfigState>((set, get) => ({
     set({ isLoading: true });
     try {
       const config = await getPublicSystemConfig();
+      // 合并配置：默认值 -> API值 -> 环境变量强制覆盖
       set({
-        config: { ...DEFAULT_CONFIG, ...config },
+        config: { ...DEFAULT_CONFIG, ...config, ...ENV_OVERRIDES },
         isLoading: false,
         isLoaded: true,
       });
       // 更新页面 favicon 和 title
       get().updateFavicon(config.systemFavicon || '');
-      get().updateTitle(config.systemTitle || DEFAULT_CONFIG.systemTitle);
+      get().updateTitle(ENV_OVERRIDES.systemTitle);
     } catch (error) {
       // 加载失败使用默认配置
       set({

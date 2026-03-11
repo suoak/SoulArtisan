@@ -336,7 +336,7 @@
   margin-bottom: 24px;
 }
 
-/* 积分管理 */
+/* 算力管理 */
 .points-overview {
   display: flex;
   align-items: center;
@@ -384,7 +384,7 @@
   font-size: 14px;
 }
 
-/* 积分记录列表 */
+/* 算力记录列表 */
 .records-list {
   display: flex;
   flex-direction: column;

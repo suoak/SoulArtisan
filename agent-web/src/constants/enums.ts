@@ -47,6 +47,8 @@ export const IMAGE_SIZES = [
 export const IMAGE_STYLES = [
   { value: '', label: '无特定风格', prompt: '' },
 
+  { value: 'realistic', label: '写实风格 (真实/自然)', prompt: 'Realistic style, natural, organic, detailed, high-quality' },
+
   // 日系动漫风格
   { value: 'japanese_anime', label: '日式动漫 (标准二次元)', prompt: 'Japanese anime style, standard 2D animation, clean lines, expressive characters' },
   { value: 'ghibli', label: '吉卜力风格 (宫崎骏手绘感)', prompt: 'Studio Ghibli style, Hayao Miyazaki hand-drawn aesthetic, soft colors, detailed backgrounds' },

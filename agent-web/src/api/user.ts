@@ -69,7 +69,7 @@ export const getUserInfo = async (): Promise<ApiResponse<UserInfo>> => {
 };
 
 /**
- * 获取积分记录
+ * 获取算力记录
  */
 export const getPointsRecords = async (
   pageNum: number = 1,

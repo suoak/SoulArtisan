@@ -18,7 +18,15 @@ import {
   createImageCharacter,
   createImageScene,
 } from '@/api/scriptResource';
-
+import {
+  createPictureResource,
+  batchCreatePictureResources,
+  pagePictureResources,
+  deletePictureResource,
+  type PictureResourceType,
+  type PictureResource,
+  RESOURCE_TYPE_LABELS,
+} from '@/api/pictureResource';
 import {
   getScriptResources as getVideoScriptResources,
   batchCreateVideoResources,
@@ -34,8 +42,10 @@ import type { Script } from '@/api/script';
 import type { ScriptResourceInfo, ResourceType } from '@/api/scriptResource';
 import { showWarning, showSuccess, upload } from '@/utils/request';
 import { IMAGE_STYLES } from '@/constants/enums';
-
+import PictureResourceList from './PictureResourceList';
 import VideoResourceTable from './VideoResourceTable';
+import ChannelSettingsModal from './ChannelSettingsModal';
+import { useWorkflowStore } from './hooks/useWorkflowStore';
 import './ScriptDetail.css';
 
 interface ProjectInfo {
@@ -48,6 +58,7 @@ interface ProjectInfo {
 const ScriptDetail: React.FC = () => {
   const { scriptId } = useParams<{ scriptId: string }>();
   const navigate = useNavigate();
+  const { channelSettings } = useWorkflowStore();
 
   const [script, setScript] = useState<Script | null>(null);
   const [resources, setResources] = useState<ScriptResourceInfo[]>([]);
@@ -67,14 +78,15 @@ const ScriptDetail: React.FC = () => {
   const [searchingUsers, setSearchingUsers] = useState(false);
   const [addingMembers, setAddingMembers] = useState(false);
 
-
+  // 图片资源状态
+  const [pictureResources, setPictureResources] = useState<PictureResource[]>([]);
 
   // 视频资源状态
   const [videoResources, setVideoResources] = useState<VideoResourceInfo[]>([]);
 
   // 手动添加模态框状态
   const [showAddModal, setShowAddModal] = useState(false);
-  const [addResourceCategory, setAddResourceCategory] = useState<'character' | 'scene' | 'prop' | 'skill'>('character');
+  const [addResourceCategory, setAddResourceCategory] = useState<PictureResourceType>('character');
   const [addResourceName, setAddResourceName] = useState('');
   const [addResourceUrl, setAddResourceUrl] = useState('');
   const [addResourceFormat, setAddResourceFormat] = useState('');
@@ -93,10 +105,14 @@ const ScriptDetail: React.FC = () => {
   const [editStyle, setEditStyle] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // 渠道设置弹框状态
+  const [showChannelSettings, setShowChannelSettings] = useState(false);
+
   // 预览模态框
   const [previewResource, setPreviewResource] = useState<ScriptResourceInfo | null>(null);
 
-
+  // 图片资源预览模态框
+  const [previewPictureResource, setPreviewPictureResource] = useState<PictureResource | null>(null);
 
   // 自动识别模态框状态
   const [showAutoDetectModal, setShowAutoDetectModal] = useState(false);
@@ -445,8 +461,8 @@ const ScriptDetail: React.FC = () => {
     try {
       // 根据当前 tab 调用不同的接口
       const result = activeTab === 'video-resources'
-        ? await analysisAssetVideo(autoDetectContent)
-        : await analysisAsset(autoDetectContent);
+        ? await analysisAssetVideo(autoDetectContent, channelSettings.chatModel || undefined)
+        : await analysisAsset(autoDetectContent, channelSettings.chatModel || undefined);
 
       if (result.code !== 200) {
         throw new Error(result.msg || '解析失败');
@@ -775,7 +791,7 @@ const ScriptDetail: React.FC = () => {
   };
 
   // 统计图片和视频资源数量
-  const imageResourceCount = 0;
+  const imageResourceCount = pictureResources.length;
   const videoResourceCount = videoResources.length;
 
   if (loading) {
@@ -814,6 +830,15 @@ const ScriptDetail: React.FC = () => {
         <div className="sd-header-actions">
           {script.userRole === 'member' && (
             <span className="sd-readonly-badge">只读模式</span>
+          )}
+          {script.userRole === 'creator' && (
+            <button onClick={() => setShowChannelSettings(true)} className="sd-settings-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+              渠道设置
+            </button>
           )}
           {!isEditing && script.userRole === 'creator' && (
             <button onClick={() => setIsEditing(true)} className="sd-edit-btn">
@@ -1549,6 +1574,12 @@ const ScriptDetail: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* 渠道设置弹框 */}
+      <ChannelSettingsModal
+        isOpen={showChannelSettings}
+        onClose={() => setShowChannelSettings(false)}
+      />
     </div>
   );
 };

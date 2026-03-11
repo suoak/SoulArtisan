@@ -10,6 +10,7 @@ export interface PlayAnalysisRequest {
   characterProjectId?: number;
   style?: string;
   storyboardCount?: number;
+  model?: string;
 }
 
 export interface StoryboardItem {
@@ -31,9 +32,10 @@ export interface ApiResponse<T = any> {
  * 解析角色
  */
 export const analysisRole = async (
-  content: string
+  content: string,
+  model?: string
 ): Promise<ApiResponse> => {
-  const response = await post<ApiResponse>('/api/playbook-analysis/role', { content });
+  const response = await post<ApiResponse>('/api/playbook-analysis/role', { content, model });
   return response.data;
 };
 
@@ -41,9 +43,10 @@ export const analysisRole = async (
  * 解析场景
  */
 export const analysisScene = async (
-  content: string
+  content: string,
+  model?: string
 ): Promise<ApiResponse> => {
-  const response = await post<ApiResponse>('/api/playbook-analysis/scene', { content });
+  const response = await post<ApiResponse>('/api/playbook-analysis/scene', { content, model });
   return response.data;
 };
 
@@ -77,11 +80,12 @@ export const getCameraList = async (
  * 获取分镜图提示词
  */
 export const getCameraPrompt = async (
-  content: string
+  content: string,
+  model?: string
 ): Promise<ApiResponse<string>> => {
   const response = await post<ApiResponse<string>>(
     '/api/playbook-analysis/getCameraPrompt',
-    { content }
+    { content, model }
   );
   return response.data;
 };
@@ -92,6 +96,7 @@ export const getCameraPrompt = async (
 export interface CameraImageToVideoPromptRequest {
   content: string;
   mediaUrl?: string;
+  model?: string;
 }
 
 /**
@@ -175,11 +180,12 @@ export interface AssetAnalysisResponse {
  * 提取剧本中的角色、场景、道具、技能等资源信息
  */
 export const analysisAsset = async (
-  content: string
+  content: string,
+  model?: string
 ): Promise<ApiResponse<AssetAnalysisResponse>> => {
   const response = await post<ApiResponse<AssetAnalysisResponse>>(
     '/api/playbook-analysis/asset',
-    { content }
+    { content, model }
   );
   return response.data;
 };
@@ -189,11 +195,12 @@ export const analysisAsset = async (
  * 自动识别剧本中的视频资源信息
  */
 export const analysisAssetVideo = async (
-  content: string
+  content: string,
+  model?: string
 ): Promise<ApiResponse<AssetAnalysisResponse>> => {
   const response = await post<ApiResponse<AssetAnalysisResponse>>(
     '/api/playbook-analysis/assetVideo',
-    { content }
+    { content, model }
   );
   return response.data;
 };
@@ -214,6 +221,7 @@ export interface VideoResourceItem {
 export interface ExtractVideoResourceRequest {
   videoPrompt: string;
   resources: VideoResourceItem[];
+  model?: string;
 }
 
 /**

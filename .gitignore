@@ -7,6 +7,10 @@ logs/
 .log/
 .claude
 .qoder
+### Environment ###
+.env.local
+.env.*.local
+
 ### STS ###
 .apt_generated
 .classpath
@@ -34,3 +38,5 @@ build/
 
 ### VS Code ###
 .vscode/
+
+nul

@@ -332,7 +332,7 @@ const ProjectManager: React.FC = () => {
 
       {/* 新建项目弹框 */}
       {showCreateModal && (
-        <div className="pm-modal-overlay" onClick={handleCancelCreate}>
+        <div className="pm-modal-overlay">
           <div className="pm-modal" onClick={(e) => e.stopPropagation()}>
             <div className="pm-modal-header">
               <h2>新建项目</h2>

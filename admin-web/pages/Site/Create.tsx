@@ -100,6 +100,24 @@ const CreateSite: React.FC = () => {
               >
                 <InputNumber min={0} style={{ width: '100%' }} />
               </Form.Item>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Form.Item
+                  label="最大用户数"
+                  name="maxUsers"
+                  extra="0表示不限制"
+                >
+                  <InputNumber min={0} style={{ width: '100%' }} placeholder="0表示不限制" />
+                </Form.Item>
+
+                <Form.Item
+                  label="最大存储空间 (MB)"
+                  name="maxStorage"
+                  extra="0表示不限制"
+                >
+                  <InputNumber min={0} style={{ width: '100%' }} placeholder="0表示不限制" />
+                </Form.Item>
+              </div>
             </div>
 
             <div>
